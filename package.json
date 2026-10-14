@@ -1,0 +1,11 @@
+{
+  "name": "psx-sprint1-gestor-tarefas",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Prot\u00f3tipo Sprint 1 para Plataformas e Servi\u00e7os X-Ops",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test",
+    "check": "node --check src/server.js && node --check src/app.js"
+  }
+}

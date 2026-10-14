@@ -1,0 +1,11 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const {createServer} = require('../src/app');
+let server, base;
+test.before(async () => {server=createServer();await new Promise(r=>server.listen(0,r));base=`http://127.0.0.1:${server.address().port}`});
+test.after(async () => {await new Promise(r=>server.close(r))});
+test('health check responde com sucesso',async()=>{const r=await fetch(base+'/api/health');assert.equal(r.status,200);assert.equal((await r.json()).status,'ok')});
+test('cria uma tarefa',async()=>{const r=await fetch(base+'/api/tasks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:'Preparar Sprint Review'})});assert.equal(r.status,201);assert.equal((await r.json()).done,false)});
+test('rejeita tarefa sem título',async()=>{const r=await fetch(base+'/api/tasks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:''})});assert.equal(r.status,400)});
+test('lista e conclui tarefas',async()=>{let r=await fetch(base+'/api/tasks');const tasks=await r.json();assert.ok(tasks.length>=1);r=await fetch(base+'/api/tasks/'+tasks[0].id+'/toggle',{method:'PATCH'});assert.equal(r.status,200);assert.equal((await r.json()).done,true)});
+test('devolve 404 em rotas desconhecidas',async()=>{const r=await fetch(base+'/xyz');assert.equal(r.status,404)});
