@@ -1,9 +1,104 @@
+
 <!DOCTYPE html>
-<html lang="pt-PT"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>TaskFlow — Sprint 1</title>
-<style>body{font:16px system-ui,sans-serif;background:#f5f7fb;color:#172036;max-width:700px;margin:48px auto;padding:0 18px}main{background:white;padding:28px;border-radius:16px;box-shadow:0 5px 26px #15294b16}h1{margin-top:0}form{display:flex;gap:8px}input{flex:1;padding:12px;border:1px solid #a6b1c0;border-radius:9px;min-width:0}button{padding:11px 18px;border:0;border-radius:9px;background:#2456dc;color:white;cursor:pointer}li{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #e6e8ee}li.done span{text-decoration:line-through;color:#667085}li button{background:#eef2ff;color:#243b8a}small{color:#697386}</style>
-</head><body><main><h1>TaskFlow</h1><p>Gestor de tarefas — protótipo demonstrável do Sprint 1.</p><form id="f"><input id="title" maxlength="120" required placeholder="Escreve uma tarefa"><button>Adicionar</button></form><ul id="list"></ul><small>As tarefas são guardadas apenas em memória; reiniciar o servidor limpa a lista.</small></main>
-<script>
-const list=document.getElementById('list'),input=document.getElementById('title');
-async function refresh(){const tasks=await(await fetch('/api/tasks')).json();list.replaceChildren();for(const t of tasks){const li=document.createElement('li');if(t.done)li.className='done';const span=document.createElement('span');span.textContent=t.title;const b=document.createElement('button');b.textContent=t.done?'Reabrir':'Concluir';b.onclick=async()=>{await fetch('/api/tasks/'+t.id+'/toggle',{method:'PATCH'});refresh()};li.append(span,b);list.append(li)}}
-document.getElementById('f').onsubmit=async(e)=>{e.preventDefault();const r=await fetch('/api/tasks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:input.value})});if(r.ok){input.value='';refresh()}else alert('Não foi possível adicionar a tarefa')};refresh();
-</script></body></html>
+<html lang="pt-PT">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>TaskFlow — Sprint 1</title>
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <main>
+        <h1>TaskFlow</h1>
+
+        <p>Gestor de tarefas — protótipo demonstrável do Sprint 1.</p>
+
+        <form id="f">
+            <input
+                id="title"
+                maxlength="120"
+                required
+                placeholder="Escreve uma tarefa"
+            >
+
+            <button>Adicionar</button>
+        </form>
+
+        <ul id="list"></ul>
+    </main>
+
+    <script>
+        const list = document.getElementById('list');
+        const input = document.getElementById('title');
+
+        async function refresh() {
+            const tasks = await (await fetch('/api/tasks')).json();
+
+            list.replaceChildren();
+
+            for (const t of tasks) {
+                const li = document.createElement('li');
+
+                if (t.done) {
+                    li.className = 'done';
+                }
+
+                const span = document.createElement('span');
+                span.textContent = t.title;
+
+                const b = document.createElement('button');
+                b.textContent = t.done ? 'Reabrir' : 'Concluir';
+
+                b.onclick = async () => {
+                    await fetch('/api/tasks/' + t.id + '/toggle', {
+                        method: 'PATCH'
+                    });
+
+                    refresh();
+                };
+
+                li.append(span, b);
+                list.append(li);
+            }
+        }
+
+        document.getElementById('f').onsubmit = async (e) => {
+            e.preventDefault();
+
+            const r = await fetch('/api/tasks', {
+                method: 'POST',
+
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+
+                body: JSON.stringify({
+                    title: input.value
+                })
+            });
+
+            if (r.ok) {
+                input.value = '';
+                refresh();
+            } else {
+                alert('Não foi possível adicionar a tarefa');
+            }
+        };
+        
+        input.addEventListener('invalid', function () {
+            this.setCustomValidity('Por favor, escreve uma tarefa antes de adicionar.');
+        });
+
+        input.addEventListener('input', function () {
+            this.setCustomValidity('');
+        });
+
+        refresh();
+    </script>
+</body>
+
+</html>
