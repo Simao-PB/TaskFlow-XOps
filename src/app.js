@@ -1,4 +1,3 @@
-
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -104,6 +103,8 @@ function createServer() {
                 '../public/index.html'
             );
 
+            // Caminho fixo, não controlado pelo utilizador.
+            // eslint-disable-next-line security/detect-non-literal-fs-filename -- Ficheiro HTML permitido explicitamente.
             fs.readFile(htmlPath, (err, html) => {
                 if (err) {
                     return json(res, 404, {
@@ -129,6 +130,8 @@ function createServer() {
                 '../public/styles.css'
             );
 
+            // Caminho fixo, não controlado pelo utilizador.
+            // eslint-disable-next-line security/detect-non-literal-fs-filename -- Ficheiro CSS permitido explicitamente.
             fs.readFile(cssPath, (err, css) => {
                 if (err) {
                     return json(res, 404, {

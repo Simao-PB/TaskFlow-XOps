@@ -2,10 +2,15 @@
   "name": "psx-sprint1-gestor-tarefas",
   "version": "1.0.0",
   "private": true,
-  "description": "Prot\u00f3tipo Sprint 1 para Plataformas e Servi\u00e7os X-Ops",
+  "description": "Protótipo Sprint 1 para Plataformas e Serviços X-Ops",
   "scripts": {
     "start": "node src/server.js",
     "test": "node --test",
-    "check": "node --check src/server.js && node --check src/app.js"
+    "check": "node --check src/server.js && node --check src/app.js",
+    "security": "eslint src --max-warnings=0"
+  },
+  "devDependencies": {
+    "eslint": "^10.13.0",
+    "eslint-plugin-security": "^4.2.0"
   }
 }
