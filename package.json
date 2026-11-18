@@ -7,7 +7,8 @@
     "start": "node src/server.js",
     "test": "node --test",
     "check": "node --check src/server.js && node --check src/app.js",
-    "security": "eslint src --max-warnings=0"
+    "security": "eslint src --max-warnings=0",
+    "ai-review": "node scripts/ai-review.js src/app.js"
   },
   "devDependencies": {
     "eslint": "^10.13.0",
