@@ -1,4 +1,5 @@
-name: TaskFlow CI - Sprint 2
+
+name: TaskFlow CI - Sprint 3
 
 on:
   push:
@@ -7,9 +8,10 @@ on:
 jobs:
   quality:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
-      - name: Obter código
+      - name: Obter codigo
         uses: actions/checkout@v5
 
       - name: Instalar Node.js
@@ -18,14 +20,45 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Instalar dependências
+      - name: Instalar dependencias
         run: npm ci
 
       - name: Verificar sintaxe
         run: npm run check
 
-      - name: Executar testes automáticos
+      - name: Executar testes automaticos
         run: npm test
 
-      - name: Análise estática de segurança SAST
+      - name: Analise estatica de seguranca SAST
         run: npm run security
+
+      - name: Instalar e iniciar Ollama
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          sudo systemctl start ollama
+
+          for tentativa in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:11434/api/tags > /dev/null; then
+              echo "Ollama pronto"
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "Erro: Ollama nao iniciou"
+          sudo systemctl status ollama --no-pager || true
+          exit 1
+
+      - name: Descarregar modelo de IA
+        run: ollama pull qwen2.5-coder:1.5b
+
+      - name: Executar AI Gate
+        run: npm run ai-review
+
+      - name: Guardar relatorio da IA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: taskflow-ai-review
+          path: reports/ai-review.json
+          if-no-files-found: warn
