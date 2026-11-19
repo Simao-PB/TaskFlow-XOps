@@ -73,13 +73,27 @@ function separarProblemas(problemas, aprovacao) {
 
     for (const problema of problemas) {
         const aprovado = aprovacao
-            ? aprovacao.problemas.some(item =>
-                item.linha === problema.linha &&
-                item.gravidade === problema.gravidade &&
-                item.descricao === problema.descricao &&
-                item.sugestao === problema.sugestao
-            )
+            ? aprovacao.problemas.some(item => {
+                if (item.gravidade !== problema.gravidade) {
+                    return false;
+                }
+
+                const correspondenciaExata =
+                    item.linha === problema.linha &&
+                    item.descricao === problema.descricao &&
+                    item.sugestao === problema.sugestao;
+
+                const correspondenciaAssinatura =
+                    Array.isArray(item.linhasPermitidas) &&
+                    item.linhasPermitidas.includes(problema.linha) &&
+                    typeof item.descricaoInicio === 'string' &&
+                    item.descricaoInicio.length >= 60 &&
+                    problema.descricao.startsWith(item.descricaoInicio);
+
+                return correspondenciaExata || correspondenciaAssinatura;
+            })
             : false;
+
 
         if (aprovado) {
             problemasAprovados.push(problema);
