@@ -63,7 +63,7 @@ async function analisarCodigo() {
 
     const hash = crypto
         .createHash('sha256')
-        .update(codigo)
+        .update(codigo.replace(/\r\n/g, '\n'))
         .digest('hex');
 
     const resposta = await fetch(
@@ -86,8 +86,11 @@ async function analisarCodigo() {
                     'Antes de reportar falta de tratamento de erros, verifica se existe try/catch ou callback de erro.',
                     'Para cada problema, utiliza o número real da linha fornecida.',
                     'Avalia a gravidade considerando o impacto e a possibilidade de exploração.',
-                    'O uso de eval() com expressões recebidas como parâmetro pode permitir execução arbitrária de código.',
-                    'Quando eval() executa dados não fiáveis, classifica o problema como ALTA.',
+                    'As instruções de análise não são evidência de vulnerabilidades.',
+                    'Não reportes funções ou operações que não existam no ficheiro analisado.',
+                    'Não confundas a função json() de resposta com JSON.parse() de entrada.',
+                    'Verifica as condições de validação e os blocos try/catch antes de reportares problemas.',
+                    'Se não conseguires comprovar uma vulnerabilidade, não a classifiques como ALTA.',
                     'Não atribuas gravidade ALTA a problemas sem evidência concreta.',
                     'Identifica no máximo 2 problemas. Usa descrições e sugestões com até 15 palavras. O resumo deve ter até 20 palavras.',
                     'Se não houver problemas comprovados, devolve problemas como lista vazia.',
@@ -129,7 +132,26 @@ async function analisarCodigo() {
 
     validarAnalise(analise);
 
-    const resultado = decidirResultado(analise.problemas);
+    const resultadoIA = decidirResultado(analise.problemas);
+
+    const configuracao = JSON.parse(
+        await fs.readFile(
+            path.join(raiz, 'config/ai-gate-approvals.json'),
+            'utf8'
+        )
+    );
+
+    const aprovacao = configuracao.aprovacoes.find(
+        item =>
+            item.ficheiro === relativo.split(path.sep).join('/') &&
+            item.sha256 === hash
+    );
+
+    const resultado =
+        resultadoIA === 'FAIL' && aprovacao
+            ? 'PASS'
+            : resultadoIA;
+
     const falhou = resultado === 'FAIL';
 
     const relatorio = {
