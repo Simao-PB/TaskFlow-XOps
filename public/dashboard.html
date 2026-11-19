@@ -1,0 +1,371 @@
+
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TaskFlow — Monitorização</title>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 30px;
+            font-family: system-ui, sans-serif;
+            background: #f4f7fc;
+            color: #172036;
+        }
+
+        main {
+            max-width: 1100px;
+            margin: auto;
+        }
+
+        h1 { margin-bottom: 5px; }
+        h2 { font-size: 20px; }
+
+        .subtitulo {
+            color: #667085;
+            margin-bottom: 28px;
+        }
+
+        .painel {
+            background: white;
+            padding: 24px;
+            border-radius: 14px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 16px #00000009;
+        }
+
+        .indicadores {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .indicador {
+            background: white;
+            padding: 22px;
+            border-radius: 14px;
+        }
+
+        .indicador p { color: #667085; }
+
+        .indicador strong {
+            font-size: 28px;
+            color: #2456dc;
+        }
+
+        input, button {
+            padding: 11px;
+            border-radius: 8px;
+        }
+
+        input { border: 1px solid #ccd2dc; }
+
+        button {
+            background: #2456dc;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 14px;
+            border-bottom: 1px solid #e7eaf0;
+            text-align: left;
+        }
+
+        th { color: #667085; }
+
+        #estado { color: #667085; }
+
+
+        .grafico-linha {
+            display: grid;
+            grid-template-columns: 160px 1fr 90px;
+            align-items: center;
+            gap: 15px;
+            margin: 18px 0;
+        }
+
+        .grafico-rota {
+            font-size: 14px;
+            overflow-wrap: anywhere;
+        }
+
+        .grafico-fundo {
+            height: 18px;
+            background: #e9eef8;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .grafico-barra {
+            height: 100%;
+            background: #2456dc;
+            border-radius: 8px;
+            transition: width 0.4s ease;
+        }
+
+        .grafico-valor {
+            font-size: 13px;
+            font-weight: bold;
+            text-align: right;
+        }
+
+        @media (max-width: 600px) {
+            .grafico-linha {
+                grid-template-columns: 100px 1fr 65px;
+                gap: 8px;
+            }
+        }
+
+
+        @media (max-width: 750px) {
+            .indicadores {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            body { padding: 15px; }
+            .painel { overflow-x: auto; }
+        }
+    </style>
+</head>
+
+<body>
+    <main>
+        <h1>TaskFlow Monitor</h1>
+        <p class="subtitulo">
+            Dashboard de observabilidade — Sprint 4
+        </p>
+
+        <section class="painel">
+            <form id="acesso">
+                <label for="token">Token de monitorização:</label>
+                <input id="token" type="password" required>
+                <button type="submit">Aceder</button>
+            </form>
+
+            <p id="estado">Introduz o token para consultar as métricas.</p>
+        </section>
+
+        <section class="indicadores">
+            <div class="indicador">
+                <p>Pedidos HTTP</p>
+                <strong id="pedidos">—</strong>
+            </div>
+
+            <div class="indicador">
+                <p>Erros HTTP</p>
+                <strong id="erros">—</strong>
+            </div>
+
+            <div class="indicador">
+                <p>Taxa de erros</p>
+                <strong id="taxa">—</strong>
+            </div>
+
+            <div class="indicador">
+                <p>Tempo médio</p>
+                <strong id="tempo">—</strong>
+            </div>
+        </section>
+
+        <section class="painel">
+            <h2>Desempenho por rota</h2>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rota</th>
+                        <th>Pedidos</th>
+                        <th>Erros</th>
+                        <th>Tempo médio</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela"></tbody>
+            </table>
+        </section>
+
+        <section class="painel">
+            <section class="painel">
+                <h2>Tempo médio de resposta por rota</h2>
+                <p class="subtitulo">
+                    Comparação do desempenho dos endpoints HTTP
+                </p>
+
+                <div id="grafico"></div>
+            </section>
+            <h2>Insight arquitetural</h2>
+            <p id="insight">
+                A aguardar métricas para identificar possíveis gargalos.
+            </p>
+        </section>
+    </main>
+
+    <script>
+        let tokenAtual = '';
+
+        const mostrar = (id, valor) => {
+            document.getElementById(id).textContent = valor;
+        };
+
+        async function atualizarDashboard() {
+            if (!tokenAtual) return;
+
+            try {
+                const resposta = await fetch('/api/metrics', {
+                    headers: {
+                        Authorization: `Bearer ${tokenAtual}`
+                    },
+                    cache: 'no-store'
+                });
+
+                if (!resposta.ok) {
+                    throw new Error(`Acesso falhou (HTTP ${resposta.status})`);
+                }
+
+                const dados = await resposta.json();
+
+                mostrar('pedidos', dados.totalPedidos);
+                mostrar('erros', dados.totalErros);
+                mostrar('taxa', dados.taxaErros + '%');
+                mostrar('tempo', dados.tempoMedioMs + ' ms');
+
+                const tabela = document.getElementById('tabela');
+                tabela.replaceChildren();
+
+                const rotas = Object.entries(dados.rotas);
+
+                for (const [nome, valores] of rotas) {
+                    const linha = document.createElement('tr');
+
+                    const campos = [
+                        nome,
+                        valores.pedidos,
+                        valores.erros,
+                        valores.tempoMedioMs + ' ms'
+                    ];
+
+                    for (const valor of campos) {
+                        const celula = document.createElement('td');
+                        celula.textContent = valor;
+                        linha.appendChild(celula);
+                    }
+
+                    tabela.appendChild(linha);
+                }
+
+
+                const grafico = document.getElementById('grafico');
+                grafico.replaceChildren();
+
+                const maiorTempo = Math.max(
+                    0.001,
+                    ...rotas.map(([, valores]) => valores.tempoMedioMs)
+                );
+
+                for (const [nome, valores] of rotas) {
+                    const linha = document.createElement('div');
+                    linha.className = 'grafico-linha';
+
+                    const nomeRota = document.createElement('span');
+                    nomeRota.className = 'grafico-rota';
+                    nomeRota.textContent = nome;
+
+                    const fundo = document.createElement('div');
+                    fundo.className = 'grafico-fundo';
+
+                    const barra = document.createElement('div');
+                    barra.className = 'grafico-barra';
+
+                    const percentagem = valores.tempoMedioMs / maiorTempo * 100;
+                    barra.style.width = `${percentagem}%`;
+
+                    fundo.appendChild(barra);
+
+                    const valor = document.createElement('span');
+                    valor.className = 'grafico-valor';
+                    valor.textContent = `${valores.tempoMedioMs} ms`;
+
+                    linha.append(nomeRota, fundo, valor);
+                    grafico.appendChild(linha);
+                }
+
+
+                const rotasComAmostras = rotas.filter(
+                    ([, valores]) => valores.pedidos >= 5
+                );
+
+                if (rotasComAmostras.length === 0) {
+                    mostrar(
+                        'insight',
+                        'Dados insuficientes. São necessários pelo menos ' +
+                        '5 pedidos por rota para avaliar o desempenho.'
+                    );
+                } else {
+                    const maisLenta = rotasComAmostras.reduce(
+                        (a, b) =>
+                            a[1].tempoMedioMs > b[1].tempoMedioMs ? a : b
+                    );
+
+                    const nome = maisLenta[0];
+                    const valores = maisLenta[1];
+
+                    const possivelGargalo =
+                        valores.tempoMedioMs > 50 &&
+                        valores.tempoMedioMs > dados.tempoMedioMs * 2;
+
+                    if (possivelGargalo) {
+                        mostrar(
+                            'insight',
+                            `Possível gargalo na rota ${nome}. ` +
+                            `Tempo médio: ${valores.tempoMedioMs} ms. ` +
+                            `A rota está acima de 50 ms e do dobro ` +
+                            `da média global. Recomenda-se investigação.`
+                        );
+                    } else {
+                        mostrar(
+                            'insight',
+                            `A rota ${nome} apresenta o maior tempo médio ` +
+                            `entre as rotas com pelo menos 5 pedidos: ` +
+                            `${valores.tempoMedioMs} ms. ` +
+                            `Não foram identificados indícios de lentidão ` +
+                            `acima dos limites definidos.`
+                        );
+                    }
+                }
+
+
+                mostrar('estado', 'Monitorização ativa — atualização a cada 5 segundos.');
+
+            } catch (erro) {
+                mostrar('estado', erro.message);
+            }
+        }
+
+        document.getElementById('acesso').addEventListener(
+            'submit',
+            evento => {
+                evento.preventDefault();
+
+                const campo = document.getElementById('token');
+                tokenAtual = campo.value;
+                campo.value = '';
+
+                atualizarDashboard();
+            }
+        );
+
+        setInterval(atualizarDashboard, 5000);
+    </script>
+</body>
+</html>
+

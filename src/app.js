@@ -28,14 +28,16 @@ function createServer() {
 
         if (/^\/api\/tasks\/\d+\/toggle$/.test(url.pathname)) {
             rota = '/api/tasks/:id/toggle';
-        } else if ([
-            '/',
-            '/index.html',
-            '/styles.css',
-            '/api/health',
-            '/api/tasks',
-            '/api/metrics'
-        ].includes(url.pathname)) {
+            } else if ([
+                '/',
+                '/index.html',
+                '/dashboard',
+                '/dashboard.html',
+                '/styles.css',
+                '/api/health',
+                '/api/tasks',
+                '/api/metrics'
+            ].includes(url.pathname)) {
             rota = url.pathname;
         }
 
@@ -140,6 +142,37 @@ function createServer() {
             task.done = !task.done;
 
             return json(res, 200, task);
+        }
+
+
+        // Carregar dashboard de monitorizacao
+        if (
+            req.method === 'GET' &&
+            (url.pathname === '/dashboard' ||
+             url.pathname === '/dashboard.html')
+        ) {
+            const dashboardPath = path.join(
+                __dirname,
+                '../public/dashboard.html'
+            );
+
+            // eslint-disable-next-line security/detect-non-literal-fs-filename -- Caminho fixo para o dashboard.
+            fs.readFile(dashboardPath, (err, html) => {
+                if (err) {
+                    return json(res, 404, {
+                        erro: 'Dashboard nao encontrado'
+                    });
+                }
+
+                res.writeHead(200, {
+                    'Content-Type': 'text/html; charset=utf-8',
+                    'X-Content-Type-Options': 'nosniff'
+                });
+
+                res.end(html);
+            });
+
+            return;
         }
 
         // Carregar página HTML

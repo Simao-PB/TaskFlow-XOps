@@ -177,3 +177,21 @@ test('bloqueia acesso as metricas sem token', async () => {
 
     assert.equal(resposta.status, 401);
 });
+
+test('dashboard de monitorizacao esta disponivel', async () => {
+    const resposta = await fetch(base + '/dashboard');
+
+    assert.equal(resposta.status, 200);
+
+    const html = await resposta.text();
+
+    assert.ok(html.includes('TaskFlow Monitor'));
+    assert.ok(html.includes('Desempenho por rota'));
+    assert.ok(html.includes('Insight arquitetural'));
+});
+
+test('dashboard tambem funciona com extensao html', async () => {
+    const resposta = await fetch(base + '/dashboard.html');
+
+    assert.equal(resposta.status, 200);
+});

@@ -2,9 +2,15 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { validarAnalise, decidirResultado } = require('./ai-gate');
+
+const {
+    validarAnalise,
+    decidirResultado,
+    separarProblemas
+} = require('./ai-gate');
 
 const configuracaoIA = require('../config/ai-gate-config.json');
+
 const modelo = configuracaoIA.modelo;
 const raiz = path.resolve(__dirname, '..');
 const ficheiro = process.argv[2] || 'src/app.js';
@@ -52,20 +58,25 @@ async function analisarCodigo() {
     }
 
     const codigo = await fs.readFile(caminho, 'utf8');
-    
-    const linhasNumeradas = codigo
-    .split('\n')
-    .map((linha, indice) => `${indice + 1}: ${linha}`)
-    .join('\n');
 
     if (codigo.length > 15000) {
         throw new Error('Ficheiro demasiado grande para esta analise');
     }
 
+    const linhasNumeradas = codigo
+        .split('\n')
+        .map((linha, indice) => `${indice + 1}: ${linha}`)
+        .join('\n');
+
     const hash = crypto
         .createHash('sha256')
         .update(codigo.replace(/\r\n/g, '\n'))
         .digest('hex');
+
+    const prompt = await fs.readFile(
+        path.join(raiz, 'config', 'ai-gate-prompt.txt'),
+        'utf8'
+    );
 
     const resposta = await fetch(
         'http://127.0.0.1:11434/api/generate',
@@ -76,18 +87,10 @@ async function analisarCodigo() {
             },
             body: JSON.stringify({
                 model: modelo,
-
-                system: await fs.readFile(
-                    path.join(raiz, 'config', 'ai-gate-prompt.txt'),
-                    'utf8'
-                ),
-
-                prompt:
-                    `Analisa o ficheiro ${relativo}:\n\n${linhasNumeradas}`,
-
+                system: prompt,
+                prompt: `Analisa o ficheiro ${relativo}:\n\n${linhasNumeradas}`,
                 format: esquema,
                 stream: false,
-
                 options: configuracaoIA.opcoes
             }),
             signal: AbortSignal.timeout(configuracaoIA.timeoutMs)
@@ -122,7 +125,7 @@ async function analisarCodigo() {
 
     const configuracao = JSON.parse(
         await fs.readFile(
-            path.join(raiz, 'config/ai-gate-approvals.json'),
+            path.join(raiz, 'config', 'ai-gate-approvals.json'),
             'utf8'
         )
     );
@@ -133,10 +136,15 @@ async function analisarCodigo() {
             item.sha256 === hash
     );
 
-    const resultado =
-        resultadoIA === 'FAIL' && aprovacao
-            ? 'PASS'
-            : resultadoIA;
+    const {
+        problemasAprovados,
+        problemasPendentes
+    } = separarProblemas(analise.problemas, aprovacao);
+
+    const resultado = decidirResultado(
+        problemasPendentes,
+        configuracaoIA.limiteRejeicao
+    );
 
     const falhou = resultado === 'FAIL';
 
@@ -151,14 +159,20 @@ async function analisarCodigo() {
         },
         resultado,
         resultadoIA,
-        revisaoManual: aprovacao
-            ? { aplicada: true, motivo: aprovacao.motivo }
-            : { aplicada: false },
+        revisaoManual: {
+            aplicada: problemasAprovados.length > 0,
+            motivo: problemasAprovados.length > 0
+                ? aprovacao.motivo
+                : null,
+            quantidadeAprovada: problemasAprovados.length
+        },
         resumo: analise.resumo,
-        problemas: analise.problemas
+        problemas: analise.problemas,
+        problemasPendentes
     };
 
     const pasta = path.join(raiz, 'reports');
+
     await fs.mkdir(pasta, { recursive: true });
 
     await fs.writeFile(
@@ -169,14 +183,21 @@ async function analisarCodigo() {
     console.log('\n=== TASKFLOW AI REVIEW ===');
     console.log('Modelo:', modelo);
     console.log('Ficheiro:', relativo);
-    console.log('Resultado:', relatorio.resultado);
-    console.log('Problemas:', relatorio.problemas.length);
-    console.log('\nResumo:', relatorio.resumo);
 
-    for (const problema of relatorio.problemas) {
+    console.log('Resultado original da IA:', resultadoIA);
+    console.log('Resultado final:', resultado);
+
+    console.log('Problemas encontrados:', analise.problemas.length);
+    console.log('Problemas aprovados:', problemasAprovados.length);
+    console.log('Problemas pendentes:', problemasPendentes.length);
+
+    console.log('\nResumo:', analise.resumo);
+
+    for (const problema of analise.problemas) {
         console.log(
             `\n[${problema.gravidade}] Linha ${problema.linha}`
         );
+
         console.log(problema.descricao);
         console.log('Sugestao:', problema.sugestao);
     }

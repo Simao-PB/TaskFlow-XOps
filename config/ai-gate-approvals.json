@@ -3,8 +3,16 @@
   "aprovacoes": [
     {
       "ficheiro": "src/app.js",
-      "sha256": "87fe21b10f6a5acda64dbcc22cf37b2358015e37383f9f8728cbf997ead2390b",
-      "motivo": "Revisao manual: os avisos sobre json() e JSON.stringify() nao representam vulnerabilidades confirmadas. Testes automaticos e analise estatica aprovados."
+      "sha256": "4fa30efa9da0d73a495cffde4043c8b7d4d1fd99b1a51156bcf15375e29cde20",
+      "motivo": "Falso positivo confirmado: JSON.stringify() serializa dados para resposta e nao necessita de JSON.parse() para validar essa serializacao.",
+      "problemas": [
+        {
+          "linha": 12,
+          "gravidade": "ALTA",
+          "descricao": "A função json() de resposta não verifica se o dado é um objeto JSON válido antes de serializá-lo. Isso pode permitir que um atacante envie um JSON inválido e causar um erro de sintaxe durante a serialização, permitindo que ele manipule o dado de maneira não esperada.",
+          "sugestao": "Adicione validação antes de serializar o dado na função json()."
+        }
+      ]
     }
   ]
 }

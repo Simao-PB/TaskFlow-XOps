@@ -59,4 +59,40 @@ function decidirResultado(problemas, limiteRejeicao = 'ALTA') {
 
     return falhou ? 'FAIL' : 'PASS';
 }
-module.exports = { validarAnalise, decidirResultado };
+
+
+function separarProblemas(problemas, aprovacao) {
+    validarProblemas(problemas);
+
+    if (aprovacao && !Array.isArray(aprovacao.problemas)) {
+        throw new Error('Aprovacao manual sem lista de problemas');
+    }
+
+    const problemasAprovados = [];
+    const problemasPendentes = [];
+
+    for (const problema of problemas) {
+        const aprovado = aprovacao
+            ? aprovacao.problemas.some(item =>
+                item.linha === problema.linha &&
+                item.gravidade === problema.gravidade &&
+                item.descricao === problema.descricao &&
+                item.sugestao === problema.sugestao
+            )
+            : false;
+
+        if (aprovado) {
+            problemasAprovados.push(problema);
+        } else {
+            problemasPendentes.push(problema);
+        }
+    }
+
+    return { problemasAprovados, problemasPendentes };
+}
+
+module.exports = {
+    validarAnalise,
+    decidirResultado,
+    separarProblemas
+};
