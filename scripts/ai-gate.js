@@ -39,9 +39,24 @@ function validarAnalise(analise) {
     return analise;
 }
 
-function decidirResultado(problemas) {
+function decidirResultado(problemas, limiteRejeicao = 'ALTA') {
     validarProblemas(problemas);
-    return problemas.some(p => p.gravidade === 'ALTA') ? 'FAIL' : 'PASS';
-}
 
+    const niveis = {
+        BAIXA: 1,
+        MEDIA: 2,
+        ALTA: 3
+    };
+
+    if (!Object.hasOwn(niveis, limiteRejeicao)) {
+        throw new Error('Limite de rejeicao invalido');
+    }
+
+    const falhou = problemas.some(
+        problema =>
+            niveis[problema.gravidade] >= niveis[limiteRejeicao]
+    );
+
+    return falhou ? 'FAIL' : 'PASS';
+}
 module.exports = { validarAnalise, decidirResultado };

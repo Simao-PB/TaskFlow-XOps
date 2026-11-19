@@ -55,3 +55,23 @@ test('Rejeita resposta da IA sem resumo', () => {
 test('Rejeita resposta da IA com problema incompleto', () => {
     assert.throws(() => validarAnalise({ resumo: 'Analise', problemas: [{ gravidade: 'ALTA' }] }));
 });
+
+test('FAIL para MEDIA quando limite e MEDIA', () => {
+    assert.equal(
+        decidirResultado([aviso('MEDIA')], 'MEDIA'),
+        'FAIL'
+    );
+});
+
+test('PASS para MEDIA quando limite e ALTA', () => {
+    assert.equal(
+        decidirResultado([aviso('MEDIA')], 'ALTA'),
+        'PASS'
+    );
+});
+
+test('Rejeita limite de gravidade invalido', () => {
+    assert.throws(() =>
+        decidirResultado([aviso('MEDIA')], 'CRITICA')
+    );
+});

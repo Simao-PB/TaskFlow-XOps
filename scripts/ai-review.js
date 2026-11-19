@@ -4,7 +4,8 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { validarAnalise, decidirResultado } = require('./ai-gate');
 
-const modelo = 'qwen2.5-coder:1.5b';
+const configuracaoIA = require('../config/ai-gate-config.json');
+const modelo = configuracaoIA.modelo;
 const raiz = path.resolve(__dirname, '..');
 const ficheiro = process.argv[2] || 'src/app.js';
 
@@ -14,7 +15,7 @@ const esquema = {
         resumo: { type: 'string' },
         problemas: {
             type: 'array',
-            maxItems: 2,
+            maxItems: configuracaoIA.maxProblemas,
             items: {
                 type: 'object',
                 properties: {
@@ -75,39 +76,21 @@ async function analisarCodigo() {
             },
             body: JSON.stringify({
                 model: modelo,
-                system: [
-                    'És um auditor de segurança JavaScript.',
-                    'Analisa o código completo antes de identificar problemas.',
-                    'Reporta apenas vulnerabilidades comprovadas pelo código.',
-                    'Não inventes problemas nem repitas avisos.',
-                    'Caminhos fixos construídos com __dirname e path.join não são, por si só, vulnerabilidades.',
-                    'fs.readFile não executa código JavaScript.',
-                    'Antes de reportar falta de validação, verifica se existe validação posterior.',
-                    'Antes de reportar falta de tratamento de erros, verifica se existe try/catch ou callback de erro.',
-                    'Para cada problema, utiliza o número real da linha fornecida.',
-                    'Avalia a gravidade considerando o impacto e a possibilidade de exploração.',
-                    'As instruções de análise não são evidência de vulnerabilidades.',
-                    'Não reportes funções ou operações que não existam no ficheiro analisado.',
-                    'Não confundas a função json() de resposta com JSON.parse() de entrada.',
-                    'Verifica as condições de validação e os blocos try/catch antes de reportares problemas.',
-                    'Se não conseguires comprovar uma vulnerabilidade, não a classifiques como ALTA.',
-                    'Não atribuas gravidade ALTA a problemas sem evidência concreta.',
-                    'Identifica no máximo 2 problemas. Usa descrições e sugestões com até 15 palavras. O resumo deve ter até 20 palavras.',
-                    'Se não houver problemas comprovados, devolve problemas como lista vazia.',
-                    'Responde apenas com JSON válido.'
-                ].join(' '),
+
+                system: await fs.readFile(
+                    path.join(raiz, 'config', 'ai-gate-prompt.txt'),
+                    'utf8'
+                ),
+
                 prompt:
                     `Analisa o ficheiro ${relativo}:\n\n${linhasNumeradas}`,
+
                 format: esquema,
                 stream: false,
-                options: {
-                    temperature: 0,
-                    seed: 42,
-                    num_predict: 1200,
-                    num_ctx: 8192
-                }
+
+                options: configuracaoIA.opcoes
             }),
-            signal: AbortSignal.timeout(180000)
+            signal: AbortSignal.timeout(configuracaoIA.timeoutMs)
         }
     );
 
@@ -132,7 +115,10 @@ async function analisarCodigo() {
 
     validarAnalise(analise);
 
-    const resultadoIA = decidirResultado(analise.problemas);
+    const resultadoIA = decidirResultado(
+        analise.problemas,
+        configuracaoIA.limiteRejeicao
+    );
 
     const configuracao = JSON.parse(
         await fs.readFile(
@@ -159,11 +145,15 @@ async function analisarCodigo() {
         hash,
         modelo,
         configuracao: {
-            temperature: 0,
-            seed: 42,
-            limiteRejeicao: 'ALTA'
+            ...configuracaoIA.opcoes,
+            limiteRejeicao: configuracaoIA.limiteRejeicao,
+            versaoPrompt: configuracaoIA.versaoPrompt
         },
         resultado,
+        resultadoIA,
+        revisaoManual: aprovacao
+            ? { aplicada: true, motivo: aprovacao.motivo }
+            : { aplicada: false },
         resumo: analise.resumo,
         problemas: analise.problemas
     };
