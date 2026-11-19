@@ -2,6 +2,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const crypto = require('node:crypto');
+const { validarAnalise, decidirResultado } = require('./ai-gate');
 
 const modelo = 'qwen2.5-coder:1.5b';
 const raiz = path.resolve(__dirname, '..');
@@ -84,6 +85,10 @@ async function analisarCodigo() {
                     'Antes de reportar falta de validação, verifica se existe validação posterior.',
                     'Antes de reportar falta de tratamento de erros, verifica se existe try/catch ou callback de erro.',
                     'Para cada problema, utiliza o número real da linha fornecida.',
+                    'Avalia a gravidade considerando o impacto e a possibilidade de exploração.',
+                    'O uso de eval() com expressões recebidas como parâmetro pode permitir execução arbitrária de código.',
+                    'Quando eval() executa dados não fiáveis, classifica o problema como ALTA.',
+                    'Não atribuas gravidade ALTA a problemas sem evidência concreta.',
                     'Identifica no máximo 2 problemas. Usa descrições e sugestões com até 15 palavras. O resumo deve ter até 20 palavras.',
                     'Se não houver problemas comprovados, devolve problemas como lista vazia.',
                     'Responde apenas com JSON válido.'
@@ -122,22 +127,10 @@ async function analisarCodigo() {
         );
     }
 
-    if (
-        typeof analise.resumo !== 'string' ||
-        !Array.isArray(analise.problemas) ||
-        !analise.problemas.every(p =>
-            Number.isInteger(p.linha) &&
-            ['BAIXA', 'MEDIA', 'ALTA'].includes(p.gravidade) &&
-            typeof p.descricao === 'string' &&
-            typeof p.sugestao === 'string'
-        )
-    ) {
-        throw new Error('Resposta da IA com formato invalido');
-    }
+    validarAnalise(analise);
 
-    const falhou = analise.problemas.some(
-        p => p.gravidade === 'ALTA'
-    );
+    const resultado = decidirResultado(analise.problemas);
+    const falhou = resultado === 'FAIL';
 
     const relatorio = {
         ficheiro: relativo,
@@ -148,7 +141,7 @@ async function analisarCodigo() {
             seed: 42,
             limiteRejeicao: 'ALTA'
         },
-        resultado: falhou ? 'FAIL' : 'PASS',
+        resultado,
         resumo: analise.resumo,
         problemas: analise.problemas
     };
