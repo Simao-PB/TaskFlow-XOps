@@ -12,6 +12,19 @@
           "descricaoInicio": "A função json() de resposta não verifica se o dado é um objeto JSON válido antes de serializá-lo."
         }
       ]
+    },
+    {
+      "ficheiro": "src/app.js",
+      "sha256": "f0b82be7d6225864b4ecf316f4e7686781edce5dcaaf39c4c93d4add40d0c7fd",
+      "motivo": "Falso positivo revisto manualmente: a funcao json() utiliza JSON.stringify(), Content-Type application/json e X-Content-Type-Options nosniff. O aviso nao demonstra uma vulnerabilidade de execucao de JavaScript.",
+      "problemas": [
+        {
+          "gravidade": "ALTA",
+          "linha": 11,
+          "descricao": "A função json() de resposta não é segura. O conteúdo da resposta pode ser manipulado por qualquer pessoa que possa acessar o servidor. Isso pode permitir a execução de código JavaScript, o que pode resultar em ataques de injeção de código.",
+          "sugestao": "Use a função json() de forma segura, passando apenas dados que você confia. Não faça uso de funções que podem ser usadas para executar código JavaScript."
+        }
+      ]
     }
   ]
 }

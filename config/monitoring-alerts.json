@@ -1,0 +1,11 @@
+
+{
+  "minimoPedidos": 5,
+  "limiteTaxaErros": 20,
+  "limiteTempoMedioMs": 50,
+  "fatorLentidao": 2,
+  "gravidade": {
+    "erros": "ALTA",
+    "lentidao": "MEDIA"
+  }
+}

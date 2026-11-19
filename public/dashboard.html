@@ -121,6 +121,66 @@
             text-align: right;
         }
 
+
+        .alerta {
+            padding: 16px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            background: #fff7ed;
+            border-left: 5px solid #f59e0b;
+        }
+
+        .alerta.alta {
+            background: #fff1f2;
+            border-left-color: #ef4444;
+        }
+
+        .alerta.media {
+            background: #fffbeb;
+            border-left-color: #f59e0b;
+        }
+
+        .alerta strong {
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .alerta p {
+            margin: 5px 0;
+        }
+
+        .sem-alertas {
+            color: #15803d;
+            font-weight: 500;
+        }
+
+
+        #resultado-ia {
+            background: #f8faff;
+            border-left: 5px solid #6366f1;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+
+        #resultado-ia h3 {
+            font-size: 16px;
+            color: #3730a3;
+            margin-bottom: 6px;
+        }
+
+        #resultado-ia p {
+            line-height: 1.6;
+        }
+
+        #ia-data {
+            margin-top: 20px;
+            font-size: 13px;
+            color: #667085;
+        }
+
+
+
         @media (max-width: 600px) {
             .grafico-linha {
                 grid-template-columns: 100px 1fr 65px;
@@ -196,6 +256,16 @@
 
         <section class="painel">
             <section class="painel">
+                <h2>Alertas de monitorização</h2>
+                <p class="subtitulo">
+                    Anomalias detetadas automaticamente nas rotas HTTP
+                </p>
+
+                <div id="lista-alertas">
+                    <p>A aguardar dados de monitorização...</p>
+                </div>
+            </section>
+            <section class="painel">
                 <h2>Tempo médio de resposta por rota</h2>
                 <p class="subtitulo">
                     Comparação do desempenho dos endpoints HTTP
@@ -203,6 +273,31 @@
 
                 <div id="grafico"></div>
             </section>
+
+            <section class="painel">
+                <h2>Análise de alertas com Inteligência Artificial</h2>
+
+                <p class="subtitulo">
+                    Última análise realizada pelo Ollama.
+                    As recomendações são hipóteses e não diagnósticos confirmados.
+                </p>
+
+                <p id="estado-ia">A aguardar análise da IA...</p>
+
+                <div id="resultado-ia" hidden>
+                    <h3>Resumo</h3>
+                    <p id="ia-resumo"></p>
+
+                    <h3>Causa possível</h3>
+                    <p id="ia-causa"></p>
+
+                    <h3>Recomendação</h3>
+                    <p id="ia-recomendacao"></p>
+
+                    <p id="ia-data"></p>
+                </div>
+            </section>
+
             <h2>Insight arquitetural</h2>
             <p id="insight">
                 A aguardar métricas para identificar possíveis gargalos.
@@ -343,6 +438,96 @@
                     }
                 }
 
+
+
+                const respostaAlertas = await fetch('/api/alerts', {
+                    headers: {
+                        Authorization: `Bearer ${tokenAtual}`
+                    },
+                    cache: 'no-store'
+                });
+
+                if (!respostaAlertas.ok) {
+                    throw new Error(
+                        `Erro ao consultar alertas: HTTP ${respostaAlertas.status}`
+                    );
+                }
+
+                const dadosAlertas = await respostaAlertas.json();
+                const listaAlertas = document.getElementById('lista-alertas');
+
+                listaAlertas.replaceChildren();
+
+                if (dadosAlertas.alertas.length === 0) {
+                    const mensagem = document.createElement('p');
+                    mensagem.className = 'sem-alertas';
+                    mensagem.textContent = 'Nenhum alerta ativo.';
+
+                    listaAlertas.appendChild(mensagem);
+                } else {
+                    for (const alerta of dadosAlertas.alertas) {
+                        const caixa = document.createElement('div');
+                        caixa.className = 'alerta ' + alerta.gravidade.toLowerCase();
+
+                        const titulo = document.createElement('strong');
+                        titulo.textContent =
+                            `${alerta.gravidade} — ${alerta.tipo}`;
+
+                        const rota = document.createElement('p');
+                        rota.textContent = `Rota: ${alerta.rota}`;
+
+                        const descricao = document.createElement('p');
+                        descricao.textContent = alerta.mensagem;
+
+                        caixa.append(titulo, rota, descricao);
+                        listaAlertas.appendChild(caixa);
+                    }
+                }
+
+
+                const respostaIA = await fetch('/api/alerts/analysis', {
+                    headers: {
+                        Authorization: `Bearer ${tokenAtual}`
+                    },
+                    cache: 'no-store'
+                });
+
+                const resultadoIA = document.getElementById('resultado-ia');
+
+                if (respostaIA.status === 404) {
+                    resultadoIA.hidden = true;
+
+                    mostrar(
+                        'estado-ia',
+                        'Ainda não existe uma análise guardada. Executa o analisador de IA.'
+                    );
+                } else if (!respostaIA.ok) {
+                    throw new Error(
+                        `Erro ao consultar a IA: HTTP ${respostaIA.status}`
+                    );
+                } else {
+                    const relatorio = await respostaIA.json();
+                    const analise = relatorio.analiseIA;
+
+                    mostrar('ia-resumo', analise.resumo);
+                    mostrar('ia-causa', analise.causaPossivel);
+                    mostrar('ia-recomendacao', analise.recomendacao);
+
+                    const dataAnalise = new Date(relatorio.data);
+
+                    mostrar(
+                        'ia-data',
+                        `Modelo: ${relatorio.modelo} | ` +
+                        `Análise realizada em: ${dataAnalise.toLocaleString('pt-PT')}`
+                    );
+
+                    mostrar(
+                        'estado-ia',
+                        'Última análise guardada — não é uma análise em tempo real.'
+                    );
+
+                    resultadoIA.hidden = false;
+                }
 
                 mostrar('estado', 'Monitorização ativa — atualização a cada 5 segundos.');
 

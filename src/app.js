@@ -2,6 +2,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const { criarMetricas } = require('./metrics');
+const { analisarMetricas } = require('./alerts');
 
 let nextId = 1;
 const tasks = [];
@@ -36,13 +37,19 @@ function createServer() {
                 '/styles.css',
                 '/api/health',
                 '/api/tasks',
-                '/api/metrics'
+                '/api/metrics',
+                '/api/alerts',
+                '/api/alerts/analysis'
             ].includes(url.pathname)) {
             rota = url.pathname;
         }
 
         res.once('finish', () => {
-            if (rota !== '/api/metrics') {
+            if (![
+                '/api/metrics',
+                '/api/alerts',
+                '/api/alerts/analysis'
+            ].includes(rota)) {
                 const duracao = metricas.calcularDuracao(inicio);
 
                 metricas.registarPedido(
@@ -69,6 +76,80 @@ function createServer() {
             }
 
             return json(res, 200, metricas.obterMetricas());
+        }
+
+
+        // Consultar alertas de monitorizacao
+        if (req.method === 'GET' && url.pathname === '/api/alerts') {
+            const token = process.env.METRICS_TOKEN;
+
+            if (!token) {
+                return json(res, 503, {
+                    erro: 'Monitorizacao nao configurada'
+                });
+            }
+
+            if (req.headers.authorization !== `Bearer ${token}`) {
+                return json(res, 401, {
+                    erro: 'Acesso nao autorizado'
+                });
+            }
+
+            const dados = metricas.obterMetricas();
+            const alertas = analisarMetricas(dados);
+
+            return json(res, 200, {
+                totalAlertas: alertas.length,
+                alertas
+            });
+        }
+
+
+        // Consultar a ultima analise de alertas com IA
+        if (
+            req.method === 'GET' &&
+            url.pathname === '/api/alerts/analysis'
+        ) {
+            const token = process.env.METRICS_TOKEN;
+
+            if (!token) {
+                return json(res, 503, {
+                    erro: 'Monitorizacao nao configurada'
+                });
+            }
+
+            if (req.headers.authorization !== `Bearer ${token}`) {
+                return json(res, 401, {
+                    erro: 'Acesso nao autorizado'
+                });
+            }
+
+            const relatorioPath = path.join(
+                __dirname,
+                '../reports/ai-alerts.json'
+            );
+
+            // eslint-disable-next-line security/detect-non-literal-fs-filename -- Caminho fixo para o relatorio.
+            fs.readFile(relatorioPath, 'utf8', (err, conteudo) => {
+                if (err) {
+                    return json(res, err.code === 'ENOENT' ? 404 : 500, {
+                        erro: err.code === 'ENOENT'
+                            ? 'Analise de IA ainda nao disponivel'
+                            : 'Erro ao ler a analise'
+                    });
+                }
+
+                try {
+                    const relatorio = JSON.parse(conteudo);
+                    return json(res, 200, relatorio);
+                } catch {
+                    return json(res, 500, {
+                        erro: 'Relatorio de IA invalido'
+                    });
+                }
+            });
+
+            return;
         }
 
         // Verificar estado da API
