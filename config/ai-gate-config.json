@@ -5,10 +5,10 @@
   "opcoes": {
     "temperature": 0,
     "seed": 42,
-    "num_predict": 1200,
+    "num_predict": 2400,
     "num_ctx": 8192
   },
   "limiteRejeicao": "ALTA",
   "maxProblemas": 2,
-  "timeoutMs": 180000
+  "timeoutMs": 300000
 }
