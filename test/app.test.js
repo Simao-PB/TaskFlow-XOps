@@ -6,6 +6,7 @@ let server, base;
 
 // Iniciar o servidor antes dos testes
 test.before(async () => {
+  process.env.METRICS_TOKEN = 'token-apenas-para-testes';
   server = createServer();
 
   await new Promise(r => server.listen(0, r));
@@ -124,4 +125,55 @@ test('permite concluir e reabrir uma tarefa', async () => {
   });
 
   assert.equal((await r.json()).done, false);
+});
+
+
+test('regista pedidos e erros nas metricas', async () => {
+    const headers = {
+        Authorization: 'Bearer token-apenas-para-testes'
+    };
+
+    const respostaAntes = await fetch(base + '/api/metrics', {
+        headers
+    });
+    const antes = await respostaAntes.json();
+
+    const respostaHealth = await fetch(base + '/api/health');
+    assert.equal(respostaHealth.status, 200);
+
+    const respostaErro = await fetch(base + '/rota-inexistente');
+    assert.equal(respostaErro.status, 404);
+
+    const respostaDepois = await fetch(base + '/api/metrics', {
+        headers
+    });
+    const depois = await respostaDepois.json();
+
+    assert.equal(depois.totalPedidos, antes.totalPedidos + 2);
+    assert.equal(depois.totalErros, antes.totalErros + 1);
+
+    assert.ok(depois.tempoMedioMs >= 0);
+
+    assert.equal(
+        depois.rotas['/api/health'].pedidos,
+        (antes.rotas['/api/health']?.pedidos || 0) + 1
+    );
+
+    assert.equal(
+        depois.rotas['rota-desconhecida'].erros,
+        (antes.rotas['rota-desconhecida']?.erros || 0) + 1
+    );
+
+    const respostaFinal = await fetch(base + '/api/metrics', {
+        headers
+    });
+    const final = await respostaFinal.json();
+
+    assert.equal(final.totalPedidos, depois.totalPedidos);
+});
+
+test('bloqueia acesso as metricas sem token', async () => {
+    const resposta = await fetch(base + '/api/metrics');
+
+    assert.equal(resposta.status, 401);
 });

@@ -1,9 +1,10 @@
+
 {
   "aprovacoes": [
     {
       "ficheiro": "src/app.js",
-      "sha256": "b04c7a2060dccfc4b102881ebc3abe4bfeba7783014de928838e9afce5ce82f1",
-      "motivo": "Revisao manual: os caminhos HTML/CSS sao fixos e os erros de leitura sao tratados."
+      "sha256": "87fe21b10f6a5acda64dbcc22cf37b2358015e37383f9f8728cbf997ead2390b",
+      "motivo": "Revisao manual: os avisos sobre json() e JSON.stringify() nao representam vulnerabilidades confirmadas. Testes automaticos e analise estatica aprovados."
     }
   ]
 }

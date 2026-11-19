@@ -1,6 +1,7 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
+const { criarMetricas } = require('./metrics');
 
 let nextId = 1;
 const tasks = [];
@@ -17,8 +18,56 @@ function json(res, status, data) {
 
 // Criar servidor
 function createServer() {
+    const metricas = criarMetricas();
     return http.createServer(async (req, res) => {
         const url = new URL(req.url, 'http://localhost');
+
+        const inicio = metricas.iniciarTempo();
+
+        let rota = 'rota-desconhecida';
+
+        if (/^\/api\/tasks\/\d+\/toggle$/.test(url.pathname)) {
+            rota = '/api/tasks/:id/toggle';
+        } else if ([
+            '/',
+            '/index.html',
+            '/styles.css',
+            '/api/health',
+            '/api/tasks',
+            '/api/metrics'
+        ].includes(url.pathname)) {
+            rota = url.pathname;
+        }
+
+        res.once('finish', () => {
+            if (rota !== '/api/metrics') {
+                const duracao = metricas.calcularDuracao(inicio);
+
+                metricas.registarPedido(
+                    rota,
+                    res.statusCode,
+                    duracao
+                );
+            }
+        });
+
+        if (req.method === 'GET' && url.pathname === '/api/metrics') {
+            const token = process.env.METRICS_TOKEN;
+
+            if (!token) {
+                return json(res, 503, {
+                    erro: 'Metricas nao configuradas'
+                });
+            }
+
+            if (req.headers.authorization !== `Bearer ${token}`) {
+                return json(res, 401, {
+                    erro: 'Acesso nao autorizado'
+                });
+            }
+
+            return json(res, 200, metricas.obterMetricas());
+        }
 
         // Verificar estado da API
         if (req.method === 'GET' && url.pathname === '/api/health') {
