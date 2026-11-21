@@ -62,3 +62,79 @@ jobs:
           name: taskflow-ai-review
           path: reports/ai-review.json
           if-no-files-found: warn
+
+  dast:
+    # Testes dinamicos de seguranca (DAST) contra uma instancia temporaria
+    # do TaskFlow, criada apenas dentro deste job do GitHub Actions.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      PORT: '3000'
+      DAST_TARGET: http://localhost:3000
+
+    steps:
+      - name: Obter codigo
+        uses: actions/checkout@v5
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Gerar token temporario de monitorizacao
+        # Token aleatorio por execucao: nao fica no repositorio nem nos logs.
+        run: |
+          TOKEN=$(openssl rand -hex 32)
+          echo "::add-mask::$TOKEN"
+          echo "METRICS_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
+      - name: Iniciar instancia temporaria do TaskFlow
+        run: |
+          mkdir -p reports
+          # Arranca o node diretamente para o PID guardado ser o do servidor.
+          nohup node src/server.js > reports/dast-server.log 2>&1 &
+          echo $! > reports/dast-server.pid
+
+      - name: Aguardar que o TaskFlow esteja operacional
+        run: |
+          for tentativa in $(seq 1 30); do
+            if curl -fsS "$DAST_TARGET/api/health" > /dev/null; then
+              echo "TaskFlow pronto em $DAST_TARGET"
+              exit 0
+            fi
+            sleep 1
+          done
+
+          echo "Erro: o TaskFlow nao iniciou"
+          cat reports/dast-server.log || true
+          exit 1
+
+      - name: Verificar estado da instancia
+        # Confirma que o alvo responde como esperado antes do scan.
+        run: |
+          curl -fsS "$DAST_TARGET/api/health"
+          echo
+          curl -fsS -o /dev/null -w "Pagina inicial: HTTP %{http_code}\n" "$DAST_TARGET/"
+          CODIGO=$(curl -s -o /dev/null -w "%{http_code}" "$DAST_TARGET/api/metrics")
+          echo "/api/metrics sem token: HTTP $CODIGO"
+          test "$CODIGO" = "401"
+
+      - name: Parar instancia temporaria do TaskFlow
+        if: always()
+        run: |
+          if [ -f reports/dast-server.pid ]; then
+            kill "$(cat reports/dast-server.pid)" 2>/dev/null || true
+          fi
+
+      - name: Guardar log do servidor DAST
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: taskflow-dast-server-log
+          path: reports/dast-server.log
+          if-no-files-found: warn
