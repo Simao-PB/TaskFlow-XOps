@@ -33,8 +33,22 @@ jobs:
         run: npm run security
 
       - name: Instalar e iniciar Ollama
+        # Versao fixa para a analise ser reprodutivel: sem isto, o script
+        # instala sempre a versao mais recente. A v0.40.17 (20/11/2026)
+        # coincidiu com falhas "length" do AI Gate sem alteracoes ao codigo;
+        # a v0.40.16 foi a usada no ultimo run verde (run #18).
+        env:
+          OLLAMA_VERSION: '0.40.16'
         run: |
-          curl -fsSL https://ollama.com/install.sh | sh
+          curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION="$OLLAMA_VERSION" sh
+
+          VERSAO_INSTALADA=$(ollama --version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | tail -1)
+          echo "Ollama instalado: $VERSAO_INSTALADA (esperado: $OLLAMA_VERSION)"
+          if [ "$VERSAO_INSTALADA" != "$OLLAMA_VERSION" ]; then
+            echo "Erro: versao do Ollama diferente da fixada"
+            exit 1
+          fi
+
           sudo systemctl start ollama
 
           for tentativa in $(seq 1 30); do
