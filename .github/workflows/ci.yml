@@ -141,12 +141,13 @@ jobs:
       - name: OWASP ZAP Baseline Scan (passivo)
         # Analise passiva: o spider percorre as paginas e o ZAP analisa as
         # respostas, sem ataques ativos e sem alterar dados.
-        # Fase inicial nao bloqueante: o criterio de aprovacao/rejeicao sera
-        # definido depois de revistos os resultados reais.
+        # Criterio: qualquer aviso (WARN) ou falha (FAIL) que nao esteja
+        # marcado como IGNORE em config/zap-rules.tsv faz falhar a pipeline.
         uses: zaproxy/action-baseline@v0.15.0
         with:
           target: ${{ env.DAST_TARGET }}
-          fail_action: false
+          rules_file_name: config/zap-rules.tsv
+          fail_action: true
           allow_issue_writing: false
           artifact_name: taskflow-zap-report
 
