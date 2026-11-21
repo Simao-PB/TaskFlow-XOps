@@ -59,9 +59,16 @@ function enviarFicheiro(res, nome, tipo) {
     });
 }
 
+// Caminho por defeito do relatorio gerado por scripts/ai-alerts.js
+const RELATORIO_ALERTAS_PADRAO = path.join(__dirname, '../reports/ai-alerts.json');
+
 // Criar servidor
-function createServer() {
+// opcoes.relatorioAlertasPath: usado apenas pelos testes, para lerem um
+// ficheiro temporario em vez de tocarem no relatorio real em reports/.
+function createServer(opcoes = {}) {
     const metricas = criarMetricas();
+    const relatorioAlertasPath =
+        opcoes.relatorioAlertasPath || RELATORIO_ALERTAS_PADRAO;
     return http.createServer(async (req, res) => {
         const url = new URL(req.url, 'http://localhost');
 
@@ -161,13 +168,8 @@ function createServer() {
                 });
             }
 
-            const relatorioPath = path.join(
-                __dirname,
-                '../reports/ai-alerts.json'
-            );
-
-            // eslint-disable-next-line security/detect-non-literal-fs-filename -- Caminho fixo para o relatorio.
-            fs.readFile(relatorioPath, 'utf8', (err, conteudo) => {
+            // eslint-disable-next-line security/detect-non-literal-fs-filename -- Caminho definido no codigo (ou pelos testes), nunca pelo pedido HTTP.
+            fs.readFile(relatorioAlertasPath, 'utf8', (err, conteudo) => {
                 if (err) {
                     return json(res, err.code === 'ENOENT' ? 404 : 500, {
                         erro: err.code === 'ENOENT'
