@@ -124,6 +124,18 @@ jobs:
           echo "/api/metrics sem token: HTTP $CODIGO"
           test "$CODIGO" = "401"
 
+      - name: OWASP ZAP Baseline Scan (passivo)
+        # Analise passiva: o spider percorre as paginas e o ZAP analisa as
+        # respostas, sem ataques ativos e sem alterar dados.
+        # Fase inicial nao bloqueante: o criterio de aprovacao/rejeicao sera
+        # definido depois de revistos os resultados reais.
+        uses: zaproxy/action-baseline@v0.15.0
+        with:
+          target: ${{ env.DAST_TARGET }}
+          fail_action: false
+          allow_issue_writing: false
+          artifact_name: taskflow-zap-report
+
       - name: Parar instancia temporaria do TaskFlow
         if: always()
         run: |
