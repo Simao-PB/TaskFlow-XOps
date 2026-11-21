@@ -109,24 +109,50 @@ ambos informativos, aceites em `config/zap-rules.tsv`:
 - As regras `IGNORE` aplicam-se a todas as URLs; devem ser revistas se a
   aplicação mudar.
 
-## 5. Falha relacionada na pipeline: versão do Ollama
+## 5. Falha relacionada na pipeline: AI Gate com `length`
 
-Durante a SCRUM-28, o job `quality` falhou no AI Gate (runs #19, #20 e #21)
-com `Motivo de conclusão: length`, sem alterações à configuração da IA e, nos
-runs #19 e #20, sem alterações ao `src/app.js` — que tinha passado no run #18.
+Durante as SCRUM-28 e SCRUM-29, o job `quality` falhou várias vezes no AI Gate
+com `Motivo de conclusão: length` (o modelo esgotou `num_predict` e devolveu
+JSON cortado), sem alterações à configuração da IA.
 
-- **Causa provável:** o workflow instalava sempre a versão mais recente do
-  Ollama; a v0.40.17 foi publicada a 20/11/2026, entre o run #18 (verde) e os
-  runs que falharam.
+### 5.1 Primeira hipótese: versão do Ollama (insuficiente)
+
+- **Observação:** o AI Gate passou no run #18 (19/11) e falhou nos runs #19,
+  #20 e #21 (21/11) com o mesmo `src/app.js`. O workflow instalava sempre a
+  versão mais recente do Ollama e a v0.40.17 foi publicada a 20/11.
 - **Decisão:** fixar a versão (`OLLAMA_VERSION: '0.40.16'`), escrever a versão
-  no log e falhar o passo se a versão instalada for diferente.
-- **Resultado:** no run #22, com o mesmo `src/app.js` do run #21, o AI Gate
-  terminou com `stop` em cerca de 1 minuto e deu PASS (no run #21, com a versão
-  mais recente, tinha terminado com `length` ao fim de cerca de 4 minutos).
-- **Lição:** a reprodutibilidade de um gate com IA depende de toda a cadeia de
-  execução, incluindo a versão do *runtime*, e não só do modelo, da
-  temperatura e da *seed*. Candidato a entrada no Architectural Feedback Log
-  (SCRUM-24).
+  no log e falhar o passo se for diferente. Os runs #22 e #23 passaram.
+- **Refutação:** nos runs #31 a #34 — **mesmo `src/app.js`, mesma versão
+  v0.40.16, `temperature: 0`, `seed: 42`** — o AI Gate passou uma vez (#32) e
+  falhou três vezes com `length`. A versão fixa continua a ser boa prática
+  (elimina uma fonte de variação), mas **não era a causa principal**. A
+  conclusão tirada com base em apenas dois runs verdes foi precipitada.
+
+### 5.2 Causa e correção atuais
+
+- **Mecanismo da falha:** o esquema JSON enviado ao Ollama não limitava o
+  tamanho dos textos (`resumo`, `descricao`, `sugestao`). Quando o modelo entra
+  em repetição, continua a escrever até esgotar os 2400 tokens.
+- **Causa provável da variação:** os runners do GitHub Actions nem sempre têm o
+  mesmo processador. Em modelos locais, diferenças de hardware (por exemplo,
+  instruções AVX-512 disponíveis ou não) alteram ligeiramente os cálculos e,
+  com temperatura 0, uma pequena diferença pode mudar toda a resposta.
+  **Ainda não comprovado:** o workflow passa a escrever no log o modelo do
+  processador e as instruções vetoriais, para comparar runs verdes e vermelhos.
+- **Correção:** `maxLength` no esquema (`config/ai-gate-config.json`,
+  `maxCaracteres`: 400/400/300). No pior caso a resposta tem cerca de 2000
+  caracteres, abaixo de `num_predict` mesmo a um token por carácter. Assim o
+  `length` deixa de depender de o modelo "decidir" parar.
+- **Rejeitado:** repetir automaticamente a análise quando falha ou voltar a
+  aumentar `num_predict` — esconderiam o problema em vez de o resolver.
+
+### 5.3 Lição
+
+A reprodutibilidade de um gate com IA local depende de toda a cadeia de
+execução — modelo, parâmetros, versão do *runtime* e hardware — e não só da
+temperatura e da *seed*. Uma hipótese só deve ser dada como confirmada com
+repetições suficientes sobre o mesmo código. Candidato a entrada no
+Architectural Feedback Log (SCRUM-24).
 
 ## 6. Executar o ZAP localmente (Windows, PowerShell)
 

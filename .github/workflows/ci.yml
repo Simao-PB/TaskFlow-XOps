@@ -49,6 +49,12 @@ jobs:
             exit 1
           fi
 
+          # Hardware do runner: modelos locais podem dar respostas diferentes
+          # em processadores diferentes, mesmo com temperatura 0 e seed fixa.
+          echo "CPU: $(lscpu | sed -n 's/^Model name:[[:space:]]*//p')"
+          echo "Nucleos: $(nproc)"
+          echo "Instrucoes vetoriais: $(grep -o -w -E 'avx|avx2|avx512f|avx512_vnni|avx_vnni' /proc/cpuinfo | sort -u | tr '\n' ' ')"
+
           sudo systemctl start ollama
 
           for tentativa in $(seq 1 30); do

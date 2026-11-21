@@ -1,7 +1,7 @@
 
 {
   "modelo": "qwen2.5-coder:1.5b",
-  "versaoPrompt": "1.0",
+  "versaoPrompt": "1.1",
   "opcoes": {
     "temperature": 0,
     "seed": 42,
@@ -10,5 +10,10 @@
   },
   "limiteRejeicao": "ALTA",
   "maxProblemas": 2,
+  "maxCaracteres": {
+    "resumo": 400,
+    "descricao": 400,
+    "sugestao": 300
+  },
   "timeoutMs": 300000
 }
