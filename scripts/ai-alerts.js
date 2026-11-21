@@ -7,6 +7,36 @@ const configuracao = require('../config/ai-gate-config.json');
 const raiz = path.resolve(__dirname, '..');
 const token = process.env.METRICS_TOKEN;
 
+const CAMPOS_ANALISE = ['resumo', 'causaPossivel', 'recomendacao'];
+
+// Converte o texto devolvido pelo Ollama num objeto.
+function interpretarRespostaIA(texto) {
+    try {
+        return JSON.parse(texto);
+    } catch {
+        throw new Error('Resposta da IA nao e JSON valido');
+    }
+}
+
+// Confirma que a analise tem os tres campos obrigatorios preenchidos.
+// Separada do resto do script para poder ser testada sem o Ollama.
+function validarAnaliseIA(analise) {
+    if (!analise || typeof analise !== 'object' || Array.isArray(analise)) {
+        throw new Error('Resposta da IA incompleta');
+    }
+
+    for (const campo of CAMPOS_ANALISE) {
+        // eslint-disable-next-line security/detect-object-injection -- campo vem da lista fixa CAMPOS_ANALISE.
+        const valor = analise[campo];
+
+        if (typeof valor !== 'string' || !valor.trim()) {
+            throw new Error('Resposta da IA incompleta');
+        }
+    }
+
+    return analise;
+}
+
 async function analisarAlertas() {
     if (!token) {
         throw new Error('METRICS_TOKEN nao configurado');
@@ -80,13 +110,7 @@ async function analisarAlertas() {
     }
 
     const dadosIA = await respostaIA.json();
-    const analise = JSON.parse(dadosIA.response);
-
-    for (const campo of ['resumo', 'causaPossivel', 'recomendacao']) {
-        if (typeof analise[campo] !== 'string' || !analise[campo].trim()) {
-            throw new Error('Resposta da IA incompleta');
-        }
-    }
+    const analise = validarAnaliseIA(interpretarRespostaIA(dadosIA.response));
 
     const relatorio = {
         modelo: configuracao.modelo,
@@ -112,7 +136,13 @@ async function analisarAlertas() {
     console.log('\nRelatorio guardado em reports/ai-alerts.json');
 }
 
-analisarAlertas().catch(erro => {
-    console.error('Erro:', erro.message);
-    process.exitCode = 1;
-});
+// So executa a analise quando o script e corrido diretamente
+// (node scripts/ai-alerts.js), e nao quando e importado pelos testes.
+if (require.main === module) {
+    analisarAlertas().catch(erro => {
+        console.error('Erro:', erro.message);
+        process.exitCode = 1;
+    });
+}
+
+module.exports = { interpretarRespostaIA, validarAnaliseIA };
