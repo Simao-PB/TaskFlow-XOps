@@ -1,0 +1,11 @@
+# Regras do OWASP ZAP Baseline para o TaskFlow (SCRUM-28).
+# Formato: ID<TAB>ACAO<TAB>(comentario). Justificacao completa em docs/dast-zap.md.
+# So entram aqui avisos revistos manualmente. Qualquer aviso novo faz falhar a pipeline.
+#
+# 10049: informativo. O ZAP descreve o estado de cache de cada resposta com este ID
+# (antes "Storable and Cacheable", depois "Non-Storable Content"). A API envia
+# Cache-Control: no-store, validado em test/security-headers.test.js.
+#
+# 10109: informativo. Indica apenas que a pagina usa JavaScript; nao e vulnerabilidade.
+10049	IGNORE	(Cache: estado de armazenamento - informativo, revisto)
+10109	IGNORE	(Modern Web Application - informativo, revisto)

@@ -3,23 +3,72 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { criarMetricas } = require('./metrics');
 const { analisarMetricas } = require('./alerts');
+const { CABECALHOS_SEGURANCA, CABECALHOS_API } = require('./security-headers');
 
 let nextId = 1;
 const tasks = [];
 
+// Ficheiros publicos servidos pelo servidor: lista fixa, o caminho pedido
+// nunca e usado diretamente para aceder ao disco.
+const PASTA_PUBLICA = path.join(__dirname, '../public');
+
+const HTML = 'text/html; charset=utf-8';
+const CSS = 'text/css; charset=utf-8';
+const JS = 'text/javascript; charset=utf-8';
+
+const FICHEIROS_PUBLICOS = new Map([
+    ['/', ['index.html', HTML]],
+    ['/index.html', ['index.html', HTML]],
+    ['/dashboard', ['dashboard.html', HTML]],
+    ['/dashboard.html', ['dashboard.html', HTML]],
+    ['/styles.css', ['styles.css', CSS]],
+    ['/dashboard.css', ['dashboard.css', CSS]],
+    ['/app.js', ['app.js', JS]],
+    ['/dashboard.js', ['dashboard.js', JS]]
+]);
+
 // Função para enviar respostas JSON
 function json(res, status, data) {
     res.writeHead(status, {
-        'Content-Type': 'application/json; charset=utf-8',
-        'X-Content-Type-Options': 'nosniff'
+        ...CABECALHOS_SEGURANCA,
+        ...CABECALHOS_API,
+        'Content-Type': 'application/json; charset=utf-8'
     });
 
     res.end(JSON.stringify(data));
 }
 
+// Função para enviar um ficheiro publico da lista fixa
+function enviarFicheiro(res, nome, tipo) {
+    const caminho = path.join(PASTA_PUBLICA, nome);
+
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Nome vem da lista fixa FICHEIROS_PUBLICOS.
+    fs.readFile(caminho, (err, conteudo) => {
+        if (err) {
+            return json(res, 404, {
+                erro: 'Ficheiro não encontrado'
+            });
+        }
+
+        res.writeHead(200, {
+            ...CABECALHOS_SEGURANCA,
+            'Content-Type': tipo
+        });
+
+        res.end(conteudo);
+    });
+}
+
+// Caminho por defeito do relatorio gerado por scripts/ai-alerts.js
+const RELATORIO_ALERTAS_PADRAO = path.join(__dirname, '../reports/ai-alerts.json');
+
 // Criar servidor
-function createServer() {
+// opcoes.relatorioAlertasPath: usado apenas pelos testes, para lerem um
+// ficheiro temporario em vez de tocarem no relatorio real em reports/.
+function createServer(opcoes = {}) {
     const metricas = criarMetricas();
+    const relatorioAlertasPath =
+        opcoes.relatorioAlertasPath || RELATORIO_ALERTAS_PADRAO;
     return http.createServer(async (req, res) => {
         const url = new URL(req.url, 'http://localhost');
 
@@ -29,12 +78,7 @@ function createServer() {
 
         if (/^\/api\/tasks\/\d+\/toggle$/.test(url.pathname)) {
             rota = '/api/tasks/:id/toggle';
-            } else if ([
-                '/',
-                '/index.html',
-                '/dashboard',
-                '/dashboard.html',
-                '/styles.css',
+            } else if (FICHEIROS_PUBLICOS.has(url.pathname) || [
                 '/api/health',
                 '/api/tasks',
                 '/api/metrics',
@@ -124,13 +168,8 @@ function createServer() {
                 });
             }
 
-            const relatorioPath = path.join(
-                __dirname,
-                '../reports/ai-alerts.json'
-            );
-
-            // eslint-disable-next-line security/detect-non-literal-fs-filename -- Caminho fixo para o relatorio.
-            fs.readFile(relatorioPath, 'utf8', (err, conteudo) => {
+            // eslint-disable-next-line security/detect-non-literal-fs-filename -- Caminho definido no codigo (ou pelos testes), nunca pelo pedido HTTP.
+            fs.readFile(relatorioAlertasPath, 'utf8', (err, conteudo) => {
                 if (err) {
                     return json(res, err.code === 'ENOENT' ? 404 : 500, {
                         erro: err.code === 'ENOENT'
@@ -226,91 +265,11 @@ function createServer() {
         }
 
 
-        // Carregar dashboard de monitorizacao
-        if (
-            req.method === 'GET' &&
-            (url.pathname === '/dashboard' ||
-             url.pathname === '/dashboard.html')
-        ) {
-            const dashboardPath = path.join(
-                __dirname,
-                '../public/dashboard.html'
-            );
+        // Carregar ficheiros publicos (HTML, CSS e JavaScript)
+        const ficheiro = FICHEIROS_PUBLICOS.get(url.pathname);
 
-            // eslint-disable-next-line security/detect-non-literal-fs-filename -- Caminho fixo para o dashboard.
-            fs.readFile(dashboardPath, (err, html) => {
-                if (err) {
-                    return json(res, 404, {
-                        erro: 'Dashboard nao encontrado'
-                    });
-                }
-
-                res.writeHead(200, {
-                    'Content-Type': 'text/html; charset=utf-8',
-                    'X-Content-Type-Options': 'nosniff'
-                });
-
-                res.end(html);
-            });
-
-            return;
-        }
-
-        // Carregar página HTML
-        if (
-            req.method === 'GET' &&
-            (url.pathname === '/' || url.pathname === '/index.html')
-        ) {
-            const htmlPath = path.join(
-                __dirname,
-                '../public/index.html'
-            );
-
-            // Caminho fixo, não controlado pelo utilizador.
-            // eslint-disable-next-line security/detect-non-literal-fs-filename -- Ficheiro HTML permitido explicitamente.
-            fs.readFile(htmlPath, (err, html) => {
-                if (err) {
-                    return json(res, 404, {
-                        erro: 'Ficheiro HTML não encontrado'
-                    });
-                }
-
-                res.writeHead(200, {
-                    'Content-Type': 'text/html; charset=utf-8',
-                    'X-Content-Type-Options': 'nosniff'
-                });
-
-                res.end(html);
-            });
-
-            return;
-        }
-
-        // Carregar ficheiro CSS
-        if (req.method === 'GET' && url.pathname === '/styles.css') {
-            const cssPath = path.join(
-                __dirname,
-                '../public/styles.css'
-            );
-
-            // Caminho fixo, não controlado pelo utilizador.
-            // eslint-disable-next-line security/detect-non-literal-fs-filename -- Ficheiro CSS permitido explicitamente.
-            fs.readFile(cssPath, (err, css) => {
-                if (err) {
-                    return json(res, 404, {
-                        erro: 'Ficheiro CSS não encontrado'
-                    });
-                }
-
-                res.writeHead(200, {
-                    'Content-Type': 'text/css; charset=utf-8',
-                    'X-Content-Type-Options': 'nosniff'
-                });
-
-                res.end(css);
-            });
-
-            return;
+        if (req.method === 'GET' && ficheiro) {
+            return enviarFicheiro(res, ficheiro[0], ficheiro[1]);
         }
 
         // Rota não encontrada

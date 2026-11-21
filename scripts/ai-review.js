@@ -15,10 +15,16 @@ const modelo = configuracaoIA.modelo;
 const raiz = path.resolve(__dirname, '..');
 const ficheiro = process.argv[2] || 'src/app.js';
 
+// maxLength limita o tamanho de cada texto. O Ollama obriga o modelo a
+// respeitar o esquema, por isso a resposta maxima fica muito abaixo de
+// num_predict: se o modelo entrar em repeticao, o texto e terminado em vez
+// de a geracao esgotar os tokens e devolver JSON cortado ("length").
+const limites = configuracaoIA.maxCaracteres;
+
 const esquema = {
     type: 'object',
     properties: {
-        resumo: { type: 'string' },
+        resumo: { type: 'string', maxLength: limites.resumo },
         problemas: {
             type: 'array',
             maxItems: configuracaoIA.maxProblemas,
@@ -30,8 +36,8 @@ const esquema = {
                         type: 'string',
                         enum: ['BAIXA', 'MEDIA', 'ALTA']
                     },
-                    descricao: { type: 'string' },
-                    sugestao: { type: 'string' }
+                    descricao: { type: 'string', maxLength: limites.descricao },
+                    sugestao: { type: 'string', maxLength: limites.sugestao }
                 },
                 required: [
                     'linha',
