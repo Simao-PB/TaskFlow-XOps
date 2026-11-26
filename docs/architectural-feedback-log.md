@@ -21,6 +21,28 @@ a causa, a decisão tomada e o que ficou por resolver.
 | AFL-08 | 21/11 | CI #20–#23 (DAST) | Spider do ZAP não chega ao dashboard nem à API | Limitação documentada; rotas cobertas por testes automáticos |
 | AFL-09 | 21/11 | Testes de mutação | Testes antigos não detetavam erros de fronteira nos alertas | Testes nos limites exatos de cada regra |
 
+## Classificação (padrão P1 do enunciado)
+
+Cada entrada está registada no Jira como issue com a label
+`Architectural-Feedback`. O tipo de decisão arquitetural exposta segue as
+categorias do enunciado:
+
+| ID | Origem | Decisão arquitetural exposta | Correção estrutural |
+|---|---|---|---|
+| AFL-01 | Falha de build | **Dependência** — o `package.json` e o `package-lock.json` podiam divergir | Lockfile versionado em conjunto; `npm ci` estrito |
+| AFL-02 | Falha do AI Gate | **Acoplamento** — a pipeline depende de um componente não determinístico como gate bloqueante | Instruções e entrada do modelo estruturadas (linhas numeradas, máximo de problemas) |
+| AFL-03 | Falha do AI Gate | **Contrato de interface** — não havia contrato para exceções revistas pela equipa | Aprovações versionadas, ligadas ao SHA256 do ficheiro |
+| AFL-04 | Falha do AI Gate | **Contrato de interface** — assumia-se que a IA repete o mesmo texto | Correspondência por assinatura (gravidade, linhas, início da descrição) |
+| AFL-05 | Falha do AI Gate | **Contrato de interface** — o esquema da resposta não limitava o tamanho | Mais tokens e tempo (correção de sintoma) |
+| AFL-06 | Falha do AI Gate | **Dependência** (runtime sem versão) e **contrato de interface** (esquema sem `maxLength`) | Versão do Ollama fixa e `maxLength` no esquema JSON |
+| AFL-07 | Gate DAST | **Acoplamento** — JavaScript e CSS embutidos no HTML impediam uma CSP restritiva | JS/CSS em ficheiros próprios; módulo único de cabeçalhos |
+| AFL-08 | Gate DAST | **Acoplamento** — as rotas da API só são descobertas através do JavaScript do frontend | Limitação documentada; rotas cobertas por testes |
+| AFL-09 | Gate de testes (mutação) | **Contrato de interface** — os limiares em `config/monitoring-alerts.json` não tinham testes nas fronteiras | Testes nos valores exatos de cada limite |
+
+AFL-01 a AFL-06 correspondem a runs falhados. AFL-07 a AFL-09 são achados dos
+gates (DAST ainda não bloqueante e testes de mutação) que expuseram decisões
+de arquitetura, registados pelo mesmo processo.
+
 ## Insight arquitetural principal
 
 **O componente não determinístico (AI Gate) foi a origem de quase todas as
