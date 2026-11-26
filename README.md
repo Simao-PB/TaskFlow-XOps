@@ -126,6 +126,7 @@ docs/       documentação técnica e evidências
 
 | Documento | Conteúdo |
 |---|---|
+| [`docs/arquitetura.md`](docs/arquitetura.md) | Arquitetura atual, fluxos, decisões e configuração |
 | [`docs/architectural-feedback-log.md`](docs/architectural-feedback-log.md) | Falhas da pipeline, causas, decisões e insight arquitetural |
 | [`docs/dast-zap.md`](docs/dast-zap.md) | Testes DAST com OWASP ZAP (SCRUM-28) |
 | [`docs/testes-monitorizacao.md`](docs/testes-monitorizacao.md) | Testes de monitorização e alertas (SCRUM-29) |
