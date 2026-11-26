@@ -200,6 +200,7 @@ passarem: nenhuma imagem é publicada sem passar por todos os gates.
 |---|---|---|
 | `PORT` | servidor | Porta HTTP (por defeito 3000) |
 | `METRICS_TOKEN` | servidor e `ai-alerts.js` | Token dos endpoints de monitorização; sem ele respondem 503 |
+| `TASKFLOW_URL` | `ai-alerts.js` | Endereço do TaskFlow a analisar (por defeito `http://127.0.0.1:3000`); só `http`/`https`, sem credenciais, parâmetros ou fragmento, porque o token é enviado para lá |
 | `OLLAMA_VERSION` | CI (job `quality`) | Versão fixa do Ollama instalada |
 | `DAST_TARGET` | CI (job `dast`) | Endereço da instância temporária |
 | `NODE_ENV` | imagem Docker | `production` |
@@ -220,8 +221,6 @@ passarem: nenhuma imagem é publicada sem passar por todos os gates.
   instância do servidor.
 - Sem autenticação de utilizadores; só a monitorização tem token, e é um token
   partilhado.
-- `scripts/ai-alerts.js` usa sempre `http://127.0.0.1:3000`: com outro `PORT`,
-  a análise de alertas não encontra o servidor.
 - Limiares dos alertas fixos e de demonstração.
 - O ZAP não analisa o dashboard nem a API (AFL-08).
 - A entrega contínua termina na publicação da imagem no `ghcr.io`: não há um

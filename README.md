@@ -76,12 +76,19 @@ node scripts/ai-alerts.js
 
 A análise fica em `reports/ai-alerts.json` e aparece no dashboard.
 
+Se o servidor estiver noutro endereço (outra porta ou outra máquina), indicar
+o endereço em `TASKFLOW_URL` antes de correr o script:
+
+```powershell
+$env:TASKFLOW_URL = "http://localhost:8080"
+```
+
 ## Verificar a qualidade localmente
 
 | Comando | O que faz |
 |---|---|
 | `npm run check` | Verificação de sintaxe |
-| `npm test` | 114 testes automáticos |
+| `npm test` | 117 testes automáticos |
 | `npm run security` | SAST com ESLint + `eslint-plugin-security` |
 | `npm run ai-review` | AI Gate sobre `src/app.js` (requer Ollama) |
 | `node scripts/ai-review.js <ficheiro.js>` | AI Gate sobre outro ficheiro do projeto |

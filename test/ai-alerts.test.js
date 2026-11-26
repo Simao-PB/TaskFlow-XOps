@@ -100,3 +100,36 @@ test('JSON valido mas sem os campos esperados e rejeitado na validacao', () => {
         { message: 'Resposta da IA incompleta' }
     );
 });
+
+// -----------------------------------------------------------------------
+// Endereco do TaskFlow (TASKFLOW_URL) — S5-7, SCRUM-46.
+// -----------------------------------------------------------------------
+
+const { resolverEnderecoAlertas } = require('../scripts/ai-alerts');
+
+test('sem TASKFLOW_URL usa a instancia local', () => {
+    for (const valor of [undefined, '', '   ']) {
+        assert.equal(resolverEnderecoAlertas(valor), 'http://127.0.0.1:3000/api/alerts');
+    }
+});
+
+test('aceita outro endereco, com ou sem barra final e caminho base', () => {
+    assert.equal(resolverEnderecoAlertas('http://localhost:8080'), 'http://localhost:8080/api/alerts');
+    assert.equal(resolverEnderecoAlertas('https://exemplo.pt/'), 'https://exemplo.pt/api/alerts');
+    assert.equal(resolverEnderecoAlertas('https://exemplo.pt/taskflow'), 'https://exemplo.pt/taskflow/api/alerts');
+});
+
+test('rejeita enderecos para onde o token nao deve ser enviado', () => {
+    const casos = [
+        ['nao e um url', /TASKFLOW_URL invalido/],
+        ['ftp://exemplo.pt', /http ou https/],
+        ['file:///etc/passwd', /http ou https/],
+        ['http://utilizador:senha@exemplo.pt', /credenciais/],
+        ['http://exemplo.pt/?destino=outro', /parametros/],
+        ['http://exemplo.pt/#x', /fragmento/]
+    ];
+
+    for (const [valor, erro] of casos) {
+        assert.throws(() => resolverEnderecoAlertas(valor), erro, valor);
+    }
+});

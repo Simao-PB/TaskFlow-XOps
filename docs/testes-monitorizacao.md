@@ -20,9 +20,10 @@ Reforçar a validação automática da observabilidade criada nas SCRUM-25, 26 e
 | `test/ai-alerts.test.js` | 10 | Validação da resposta da IA em `scripts/ai-alerts.js`: campos em falta, vazios ou com tipo errado, respostas que não são objeto, JSON cortado (como no erro `length`), texto que não é JSON |
 
 Total do projeto: **87 testes** (antes da SCRUM-29: 40). O contador do
-`npm test` mostra mais um, porque o Node.js também executa
+`npm test` mostrava mais um, porque o Node.js também executava
 `test/fixtures/codigo-inseguro.js` (exemplo usado nos testes do AI Gate, sem
-testes próprios).
+testes próprios). *Corrigido no Sprint 5 (S5-7): o `npm test` corre só
+`test/*.test.js`.*
 
 ## 3. Decisões
 

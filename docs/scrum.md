@@ -16,11 +16,14 @@ membro a desempenhá-lo pelo menos uma vez.
 
 | Sprint | Product Owner | Objetivo (do Jira) |
 |---|---|---|
-| Sprint 1 — Protótipo inicial | *a confirmar pela equipa* | Protótipo funcional (criar, listar, concluir tarefas), repositório GitHub, testes e CI inicial |
-| Sprint 2 | *a confirmar pela equipa* | Consolidar o protótipo, testes no GitHub Actions e documentação da arquitetura |
-| Sprint 3 | *a confirmar pela equipa* | Análise de código com IA na pipeline, configuração versionada e reprodutibilidade |
+| Sprint 1 — Protótipo inicial | **Simão Pereira** | Protótipo funcional (criar, listar, concluir tarefas), repositório GitHub, testes e CI inicial |
+| Sprint 2 | **Tiago Bolota** | Consolidar o protótipo, testes no GitHub Actions e documentação da arquitetura |
+| Sprint 3 | **Simão Pereira** | Análise de código com IA na pipeline, configuração versionada e reprodutibilidade |
 | Sprint 4 | **Tiago Bolota** | Observabilidade (métricas, dashboard, alertas com IA), DAST e documentação |
 | Sprint 5 | **Simão Pereira** | Ver secção 3 |
+
+Cada membro foi Product Owner pelo menos uma vez: Simão Pereira nos Sprints 1,
+3 e 5 e Tiago Bolota nos Sprints 2 e 4, alternando em todos os sprints.
 
 ## 3. Sprint 5 — Planning
 

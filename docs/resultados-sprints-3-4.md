@@ -24,7 +24,8 @@ Detalhes em `docs/arquitetura.md` e `docs/architectural-feedback-log.md`.
   testes que existiam antes (AFL-09).
 - Os testes não dependem de tempos reais nem de respostas do Ollama.
 - Nota: o contador do `npm test` mostra mais um teste do que existem, porque o
-  Node.js também executa `test/fixtures/codigo-inseguro.js`.
+  Node.js também executa `test/fixtures/codigo-inseguro.js`. *Corrigido no
+  Sprint 5 (S5-7): o `npm test` corre só `test/*.test.js`.*
 
 ### 1.2 SAST — ESLint + `eslint-plugin-security`
 
@@ -160,7 +161,7 @@ Evidência completa em `docs/architectural-feedback-log.md`.
 - Confirmar a hipótese do hardware na variabilidade do AI Gate e avaliar se o
   AI Gate deve ser bloqueante ou apenas informativo.
 - Configurar o endereço do servidor em `scripts/ai-alerts.js` (hoje fixo em
-  `127.0.0.1:3000`).
+  `127.0.0.1:3000`). *Feito no Sprint 5 (S5-7): variável `TASKFLOW_URL`.*
 
 ## 8. Evidências Scrum
 
