@@ -48,6 +48,38 @@ function atualizarResumo() {
     document.getElementById('barra-progresso').value = progresso;
     document.getElementById('percentagem').textContent =
         `${Math.round(progresso * 100)}%`;
+
+    let texto = 'Sem tarefas ainda';
+
+    if (total > 0 && concluidas === total) {
+        texto = 'Tudo concluído!';
+    } else if (total > 0) {
+        texto = `${concluidas} de ${total} concluídas`;
+    }
+
+    document.getElementById('progresso-texto').textContent = texto;
+}
+
+// Ícone de visto, criado com a API do DOM (sem HTML em texto).
+function criarIconeVisto() {
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('width', '16');
+    svg.setAttribute('height', '16');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '3');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+    svg.setAttribute('aria-hidden', 'true');
+
+    const caminho = document.createElementNS(ns, 'path');
+    caminho.setAttribute('d', 'M5 12.5l4.5 4.5L19 7.5');
+    svg.append(caminho);
+
+    return svg;
 }
 
 function tarefasFiltradas() {
@@ -74,16 +106,20 @@ function criarItem(tarefa) {
     estado.className = 'tarefa-estado';
     estado.textContent = tarefa.done ? 'Concluída' : 'Por fazer';
 
+    // Círculo para concluir ou reabrir a tarefa.
     const botao = document.createElement('button');
     botao.type = 'button';
-    botao.textContent = tarefa.done ? 'Reabrir' : 'Concluir';
+    botao.className = 'alternar';
+    botao.setAttribute('aria-pressed', String(tarefa.done));
     botao.setAttribute(
         'aria-label',
-        `${botao.textContent} a tarefa "${tarefa.title}"`
+        `${tarefa.done ? 'Reabrir' : 'Concluir'} a tarefa "${tarefa.title}"`
     );
+    botao.title = tarefa.done ? 'Reabrir' : 'Concluir';
+    botao.append(criarIconeVisto());
     botao.addEventListener('click', () => alternarTarefa(tarefa.id, botao));
 
-    item.append(titulo, estado, botao);
+    item.append(botao, titulo, estado);
 
     return item;
 }
@@ -95,7 +131,7 @@ function desenharLista() {
     atualizarResumo();
 
     if (visiveis.length === 0) {
-        vazio.textContent = tarefas.length === 0
+        document.getElementById('vazio-texto').textContent = tarefas.length === 0
             ? 'Ainda não tens tarefas. Adiciona a primeira acima.'
             : 'Não há tarefas neste filtro.';
         vazio.hidden = false;
