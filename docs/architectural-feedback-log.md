@@ -20,6 +20,7 @@ a causa, a decisão tomada e o que ficou por resolver.
 | AFL-07 | 21/11 | CI #20 (DAST) | ZAP: 6 avisos de cabeçalhos de segurança | Módulo de cabeçalhos, CSP sem `'unsafe-inline'`, JS/CSS fora do HTML |
 | AFL-08 | 21/11 | CI #20–#23 (DAST) | Spider do ZAP não chega ao dashboard nem à API | Limitação documentada; rotas cobertas por testes automáticos |
 | AFL-09 | 21/11 | Testes de mutação | Testes antigos não detetavam erros de fronteira nos alertas | Testes nos limites exatos de cada regra |
+| AFL-10 | 26/11 | Workflow de sugestões de testes #1 | Resposta da IA cortada (`length`): esquema maior do que o `num_predict` | Limites na configuração e teste de contrato do orçamento de tokens |
 
 ## Classificação (padrão P1 do enunciado)
 
@@ -38,6 +39,7 @@ categorias do enunciado:
 | AFL-07 | Gate DAST | **Acoplamento** — JavaScript e CSS embutidos no HTML impediam uma CSP restritiva | JS/CSS em ficheiros próprios; módulo único de cabeçalhos |
 | AFL-08 | Gate DAST | **Acoplamento** — as rotas da API só são descobertas através do JavaScript do frontend | Limitação documentada; rotas cobertas por testes |
 | AFL-09 | Gate de testes (mutação) | **Contrato de interface** — os limiares em `config/monitoring-alerts.json` não tinham testes nas fronteiras | Testes nos valores exatos de cada limite |
+| AFL-10 | Workflow de IA (informativo) | **Contrato de interface** — os limites do esquema JSON não estavam ligados ao orçamento de tokens do modelo | Limites versionados e teste de contrato que verifica que cabem no `num_predict` |
 
 AFL-01 a AFL-06 correspondem a runs falhados. AFL-07 a AFL-09 são achados dos
 gates (DAST ainda não bloqueante e testes de mutação) que expuseram decisões
@@ -180,10 +182,33 @@ que protege o código.
   cabeçalho `Authorization: Bearer undefined` daria acesso às métricas. O
   código atual não tem o problema; um teste impede que seja introduzido.
 
+### AFL-10 — Esquema de sugestões maior do que o orçamento de tokens
+
+- **Observação:** primeira execução do workflow "Sugestões de testes com IA"
+  (S5-4, 26/11, commit `db4d0cc`): `Motivo de conclusão: length` e "Resposta
+  da IA nao e JSON valido".
+- **Causa raiz:** o esquema permitia 5 × (120 + 300 + 1500) = 9600
+  caracteres, muito acima do `num_predict` (2400). O `maxLength` do AFL-06 só
+  evita respostas cortadas se o total máximo couber no orçamento de tokens —
+  e esse total não era verificado.
+- **Decisão arquitetural exposta — CONTRATO DE INTERFACE:** os limites do
+  esquema de resposta e o `num_predict` estavam definidos em sítios diferentes,
+  sem nenhuma regra a ligá-los.
+- **Correção estrutural:** commit `db17ee8` — limites das sugestões em
+  `config/ai-gate-config.json` (3 × 80/160/400) e `test/ai-limites.test.js`,
+  um teste de contrato que falha se a resposta máxima de qualquer esquema de IA
+  do projeto puder exceder o `num_predict`. O próprio teste detetou que um
+  primeiro ajuste (código com 500 caracteres) ainda excedia o limite.
+- **Resultado:** as execuções seguintes terminaram com `stop`. Os textos
+  cortados aos 400 caracteres no run #2 confirmaram que o Ollama aplica o
+  `maxLength` (questão em aberto no AFL-06). Detalhes em
+  `docs/testes-assistidos-ia.md`.
+
 ## Decisões em aberto
 
 1. Confirmar ou descartar a hipótese do hardware (AFL-06) com o registo do
-   processador nos próximos runs.
+   processador nos próximos runs. (Que o Ollama aplica o `maxLength` ficou
+   confirmado no AFL-10.)
 2. Rever periodicamente as aprovações manuais e as regras `IGNORE` do ZAP
    sempre que o código mudar.
 3. Alargar a cobertura do DAST ao dashboard e à API (AFL-08).

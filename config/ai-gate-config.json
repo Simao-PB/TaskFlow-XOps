@@ -15,5 +15,13 @@
     "descricao": 400,
     "sugestao": 300
   },
+  "sugestoesTestes": {
+    "maxTestes": 3,
+    "maxCaracteres": {
+      "nome": 80,
+      "objetivo": 160,
+      "codigo": 400
+    }
+  },
   "timeoutMs": 300000
 }

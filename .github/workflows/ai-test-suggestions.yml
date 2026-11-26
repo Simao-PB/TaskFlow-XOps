@@ -1,0 +1,78 @@
+name: Sugestões de testes com IA
+
+# S5-4 (SCRUM-43). Workflow informativo: gera sugestões de testes com o
+# modelo local e executa-as no runner descartável. Nunca bloqueia a
+# pipeline principal (ci.yml) e nunca altera o repositório: as sugestões
+# são revistas por uma pessoa antes de entrarem em test/.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ficheiro:
+        description: 'Ficheiro a testar (dentro do projeto)'
+        default: 'scripts/ai-gate.js'
+        required: true
+      funcao:
+        description: 'Função exportada a testar'
+        default: 'separarProblemas'
+        required: true
+  push:
+    paths:
+      - 'scripts/ai-test-suggest.js'
+      - 'config/ai-test-prompt.txt'
+      - '.github/workflows/ai-test-suggestions.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  sugerir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      FICHEIRO: ${{ github.event.inputs.ficheiro || 'scripts/ai-gate.js' }}
+      FUNCAO: ${{ github.event.inputs.funcao || 'separarProblemas' }}
+
+    steps:
+      - name: Obter codigo
+        uses: actions/checkout@v5
+
+      - name: Instalar Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Instalar e iniciar Ollama
+        # Mesma versão fixa do job quality (AFL-06).
+        env:
+          OLLAMA_VERSION: '0.40.16'
+        run: |
+          curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION="$OLLAMA_VERSION" sh
+          sudo systemctl start ollama
+
+          for tentativa in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:11434/api/tags > /dev/null; then
+              echo "Ollama pronto"
+              exit 0
+            fi
+            sleep 2
+          done
+
+          echo "Erro: Ollama nao iniciou"
+          exit 1
+
+      - name: Descarregar modelo de IA
+        run: ollama pull qwen2.5-coder:1.5b
+
+      - name: Gerar e executar sugestoes de testes
+        # O código gerado pela IA só é executado aqui, no runner descartável.
+        run: node scripts/ai-test-suggest.js "$FICHEIRO" "$FUNCAO" --executar
+
+      - name: Guardar sugestoes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: taskflow-ai-test-suggestions
+          path: reports/ai-test-suggestions.json
+          if-no-files-found: warn
