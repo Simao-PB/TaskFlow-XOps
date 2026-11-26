@@ -1,5 +1,5 @@
 
-name: TaskFlow CI - Sprint 3
+name: TaskFlow CI/CD
 
 on:
   push:

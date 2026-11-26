@@ -89,15 +89,38 @@ A análise fica em `reports/ai-alerts.json` e aparece no dashboard.
 ## Pipeline CI/CD
 
 O workflow `.github/workflows/ci.yml` corre em cada *push* e *pull request*,
-com dois jobs em paralelo:
+com três jobs em paralelo e um de entrega:
 
 - **`quality`** — sintaxe → testes → SAST → instalação do Ollama (versão fixa)
   → AI Gate → relatório da IA como artefacto.
 - **`dast`** — arranca uma instância temporária do TaskFlow → OWASP ZAP
   Baseline (passivo) → relatórios como artefacto. Falha com qualquer aviso
   novo não listado em `config/zap-rules.tsv`.
+- **`docker`** — constrói a imagem Docker, arranca o contentor e verifica o
+  health check, a autenticação (401/200) e o estado `healthy`.
+- **`publish`** — só em *push* para a `main` e só se os três jobs anteriores
+  passarem: publica a imagem no GitHub Container Registry
+  (`ghcr.io/simao-pb/taskflow-xops`, tags `<sha>` e `latest`).
 
-Não existe deploy automático.
+A entrega termina na publicação da imagem: não há um servidor público onde a
+aplicação seja instalada automaticamente.
+
+### Executar com Docker
+
+```powershell
+docker build -t taskflow-xops .
+```
+
+```powershell
+docker run --rm -p 3000:3000 -e METRICS_TOKEN="escolhe-um-token-teu" taskflow-xops
+```
+
+Ou, depois da primeira publicação na `main`, com a imagem do registo
+(pode exigir `docker login ghcr.io` enquanto o pacote for privado):
+
+```powershell
+docker run --rm -p 3000:3000 -e METRICS_TOKEN="escolhe-um-token-teu" ghcr.io/simao-pb/taskflow-xops:latest
+```
 
 ## Endpoints
 

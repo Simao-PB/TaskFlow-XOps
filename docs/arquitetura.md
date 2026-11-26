@@ -144,10 +144,28 @@ flowchart LR
         direction TB
         D1["Token<br/>aleatório"] --> D2["Instância<br/>temporária"] --> D3["Health check<br/>e 401"] --> D4["OWASP ZAP<br/>Baseline"] --> D5["Relatórios ZAP<br/>(artefacto)"]
     end
+
+    G --> DK
+
+    subgraph DK["Job docker"]
+        direction TB
+        K1["docker build"] --> K2["Contentor com<br/>token aleatório"] --> K3["Health, 401/200<br/>e healthy"]
+    end
+
+    Q --> P
+    DA --> P
+    DK --> P
+
+    subgraph P["Job publish (só main)"]
+        direction TB
+        P1["docker build"] --> P2["Push para ghcr.io<br/>sha e latest"]
+    end
 ```
 
-Os dois jobs correm em paralelo: um FAIL do AI Gate não esconde os resultados
-do DAST, e o DAST não espera pelos minutos do Ollama.
+Os jobs `quality`, `dast` e `docker` correm em paralelo: um FAIL do AI Gate
+não esconde os resultados do DAST, e o DAST não espera pelos minutos do
+Ollama. O job `publish` só corre em *push* para a `main` e só depois de os três
+passarem: nenhuma imagem é publicada sem passar por todos os gates.
 
 | Verificação | Bloqueia a pipeline quando |
 |---|---|
@@ -156,6 +174,7 @@ do DAST, e o DAST não espera pelos minutos do Ollama.
 | SAST | Qualquer aviso do ESLint (`--max-warnings=0`) |
 | AI Gate | Problema pendente de gravidade ≥ ALTA, ou resposta da IA inválida |
 | DAST | Aviso ou falha do ZAP não marcado como `IGNORE` em `config/zap-rules.tsv` |
+| Docker | A imagem não constrói, o contentor não responde, a autenticação falha ou o HEALTHCHECK não chega a `healthy` |
 
 ## 4. Decisões de arquitetura
 
@@ -170,6 +189,8 @@ do DAST, e o DAST não espera pelos minutos do Ollama.
 | `createServer({ relatorioAlertasPath })` | Testes sem tocar no relatório real | `docs/testes-monitorizacao.md` |
 | AI Gate com esquema JSON limitado (`maxLength`) e aprovações por SHA256 | Conter o comportamento não determinístico do modelo | AFL-03 a AFL-06 |
 | DAST num job separado, contra instância temporária | Isolamento e paralelismo | `docs/dast-zap.md` |
+| Imagem Docker com versão fixa do Node, sem root e sem o token | Reprodutibilidade (AFL-06), menor privilégio, segredos fora da imagem | Job `docker`; `Dockerfile` |
+| Publicação só depois de todos os gates, com o `GITHUB_TOKEN` | Entrega contínua sem segredos nem contas externas | Job `publish` |
 
 ## 5. Configuração
 
@@ -181,6 +202,7 @@ do DAST, e o DAST não espera pelos minutos do Ollama.
 | `METRICS_TOKEN` | servidor e `ai-alerts.js` | Token dos endpoints de monitorização; sem ele respondem 503 |
 | `OLLAMA_VERSION` | CI (job `quality`) | Versão fixa do Ollama instalada |
 | `DAST_TARGET` | CI (job `dast`) | Endereço da instância temporária |
+| `NODE_ENV` | imagem Docker | `production` |
 
 ### Ficheiros de configuração versionados
 
@@ -202,7 +224,10 @@ do DAST, e o DAST não espera pelos minutos do Ollama.
   a análise de alertas não encontra o servidor.
 - Limiares dos alertas fixos e de demonstração.
 - O ZAP não analisa o dashboard nem a API (AFL-08).
-- Sem deploy automático.
+- A entrega contínua termina na publicação da imagem no `ghcr.io`: não há um
+  servidor público onde a aplicação seja instalada automaticamente.
+- O DAST analisa o processo Node.js arrancado no runner, não o contentor
+  publicado.
 
 ## 7. Evolução desde os Sprints 1 e 2
 
@@ -211,6 +236,6 @@ do DAST, e o DAST não espera pelos minutos do Ollama.
 | Frontend | `index.html` com JavaScript inline | HTML sem código inline + dashboard |
 | Backend | Rotas de tarefas | + métricas, alertas, endpoints protegidos, cabeçalhos de segurança, lista fixa de ficheiros |
 | IA | Apenas no desenvolvimento (ChatGPT) | AI Gate na pipeline e análise de alertas |
-| Pipeline | Sintaxe e testes | + SAST, AI Gate e DAST, em dois jobs |
+| Pipeline | Sintaxe e testes | + SAST, AI Gate, DAST e imagem Docker, com publicação no `ghcr.io` |
 | Testes | 9 (fim do Sprint 2) | 87 |
 | Documentação de decisões | Justificação da arquitetura | + Architectural Feedback Log com evidência de runs |
