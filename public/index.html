@@ -1,35 +1,85 @@
-
 <!DOCTYPE html>
 <html lang="pt-PT">
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
 
-    <title>TaskFlow — Sprint 1</title>
+    <title>TaskFlow — Gestor de tarefas</title>
 
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="/styles.css">
 </head>
 
 <body>
+    <header class="topo">
+        <div>
+            <h1>TaskFlow</h1>
+            <p class="subtitulo">Gestor de tarefas</p>
+        </div>
+
+        <a class="link-dashboard" href="/dashboard">Monitorização</a>
+    </header>
+
     <main>
-        <h1>TaskFlow</h1>
+        <section class="resumo" aria-label="Resumo das tarefas">
+            <div class="contador">
+                <span class="contador-valor" id="total">0</span>
+                <span class="contador-nome">Total</span>
+            </div>
 
-        <p>Gestor de tarefas — protótipo demonstrável do Sprint 1.</p>
+            <div class="contador">
+                <span class="contador-valor" id="pendentes">0</span>
+                <span class="contador-nome">Por fazer</span>
+            </div>
 
-        <form id="f">
-            <input
-                id="title"
-                maxlength="120"
-                required
-                placeholder="Escreve uma tarefa"
-            >
+            <div class="contador">
+                <span class="contador-valor" id="concluidas">0</span>
+                <span class="contador-nome">Concluídas</span>
+            </div>
 
-            <button>Adicionar</button>
+            <div class="progresso">
+                <label for="barra-progresso">Progresso</label>
+                <progress id="barra-progresso" max="1" value="0"></progress>
+                <span id="percentagem">0%</span>
+            </div>
+        </section>
+
+        <form id="f" class="nova-tarefa" novalidate>
+            <label for="title">Nova tarefa</label>
+
+            <div class="linha-formulario">
+                <input
+                    id="title"
+                    maxlength="120"
+                    required
+                    autocomplete="off"
+                    placeholder="Ex.: Preparar a Sprint Review"
+                    aria-describedby="caracteres"
+                >
+
+                <button type="submit" id="adicionar">Adicionar</button>
+            </div>
+
+            <small id="caracteres">0/120</small>
         </form>
 
-        <ul id="list"></ul>
+        <p id="mensagem" class="mensagem" role="status" aria-live="polite" hidden></p>
+
+        <div class="filtros" role="group" aria-label="Filtrar tarefas">
+            <button type="button" class="filtro" data-filtro="todas" aria-pressed="true">Todas</button>
+            <button type="button" class="filtro" data-filtro="pendentes" aria-pressed="false">Por fazer</button>
+            <button type="button" class="filtro" data-filtro="concluidas" aria-pressed="false">Concluídas</button>
+        </div>
+
+        <ul id="list" class="lista" aria-label="Lista de tarefas"></ul>
+
+        <p id="vazio" class="vazio" hidden></p>
     </main>
+
+    <footer class="rodape">
+        TaskFlow-XOps · Plataformas e Serviços X-Ops · UBI 2026/27
+    </footer>
 
     <script src="/app.js"></script>
 </body>

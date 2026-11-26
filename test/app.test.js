@@ -195,3 +195,18 @@ test('dashboard tambem funciona com extensao html', async () => {
 
     assert.equal(resposta.status, 200);
 });
+
+// Sprint 5 - Interface principal: estrutura acessivel e elementos da UI
+test('pagina inicial tem formulario acessivel, mensagens, filtros e resumo', async () => {
+    const html = await (await fetch(base + '/')).text();
+
+    assert.ok(html.includes('<label for="title">'), 'campo com label');
+    assert.ok(html.includes('role="status"'), 'zona de mensagens');
+    assert.ok(html.includes('aria-live="polite"'), 'mensagens anunciadas');
+    assert.ok(html.includes('data-filtro="todas"'));
+    assert.ok(html.includes('data-filtro="pendentes"'));
+    assert.ok(html.includes('data-filtro="concluidas"'));
+    assert.ok(html.includes('id="barra-progresso"'));
+    assert.ok(html.includes('href="/dashboard"'));
+    assert.ok(!html.includes('Sprint 1'), 'sem referencias antigas ao Sprint 1');
+});
