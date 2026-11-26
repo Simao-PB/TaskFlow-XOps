@@ -81,7 +81,7 @@ A análise fica em `reports/ai-alerts.json` e aparece no dashboard.
 | Comando | O que faz |
 |---|---|
 | `npm run check` | Verificação de sintaxe |
-| `npm test` | 87 testes automáticos |
+| `npm test` | 114 testes automáticos |
 | `npm run security` | SAST com ESLint + `eslint-plugin-security` |
 | `npm run ai-review` | AI Gate sobre `src/app.js` (requer Ollama) |
 | `node scripts/ai-review.js <ficheiro.js>` | AI Gate sobre outro ficheiro do projeto |
@@ -150,6 +150,7 @@ docs/       documentação técnica e evidências
 | Documento | Conteúdo |
 |---|---|
 | [`docs/arquitetura.md`](docs/arquitetura.md) | Arquitetura atual, fluxos, decisões e configuração |
+| [`docs/testes-assistidos-ia.md`](docs/testes-assistidos-ia.md) | Testes assistidos por IA: processo, taxa de aproveitamento e reflexão crítica |
 | [`docs/scrum.md`](docs/scrum.md) | Team Contract, rotação do Product Owner, planning, dailies, review e retrospetiva |
 | [`docs/resultados-sprints-3-4.md`](docs/resultados-sprints-3-4.md) | Resultados de testes, SAST, DAST e AI Gate, lições e evidências Scrum |
 | [`docs/architectural-feedback-log.md`](docs/architectural-feedback-log.md) | Falhas da pipeline, causas, decisões e insight arquitetural |
