@@ -22,8 +22,10 @@ const configuracaoIA = require('../config/ai-gate-config.json');
 
 const raiz = path.resolve(__dirname, '..');
 
-const MAX_TESTES = 5;
-const MAX_CODIGO = 1500;
+// Limites versionados em config/ai-gate-config.json. O total máximo
+// (maxTestes x soma dos maxCaracteres) tem de caber em num_predict, senão
+// a resposta pode ser cortada ("length"); ver test/ai-limites.test.js.
+const { maxTestes: MAX_TESTES, maxCaracteres: LIMITES } = configuracaoIA.sugestoesTestes;
 
 const esquema = {
     type: 'object',
@@ -34,9 +36,9 @@ const esquema = {
             items: {
                 type: 'object',
                 properties: {
-                    nome: { type: 'string', maxLength: 120 },
-                    objetivo: { type: 'string', maxLength: 300 },
-                    codigo: { type: 'string', maxLength: MAX_CODIGO }
+                    nome: { type: 'string', maxLength: LIMITES.nome },
+                    objetivo: { type: 'string', maxLength: LIMITES.objetivo },
+                    codigo: { type: 'string', maxLength: LIMITES.codigo }
                 },
                 required: ['nome', 'objetivo', 'codigo']
             }
@@ -172,6 +174,7 @@ async function pedirSugestoes(codigo, relativo, funcao) {
     try {
         analise = JSON.parse(dados.response);
     } catch {
+        console.log('Inicio da resposta:', String(dados.response).slice(0, 300));
         throw new Error('Resposta da IA nao e JSON valido');
     }
 
@@ -263,6 +266,7 @@ if (require.main === module) {
 }
 
 module.exports = {
+    esquema,
     resolverFicheiro,
     validarSugestoes,
     construirFicheiroTeste,

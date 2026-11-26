@@ -34,8 +34,9 @@ test('rejeita respostas sem lista de testes', () => {
     }
 });
 
-test('rejeita mais de 5 testes', () => {
-    const testes = Array.from({ length: 6 }, () => SUGESTAO);
+test('rejeita mais testes do que o limite configurado', () => {
+    const { maxTestes } = require('../config/ai-gate-config.json').sugestoesTestes;
+    const testes = Array.from({ length: maxTestes + 1 }, () => SUGESTAO);
 
     assert.throws(() => validarSugestoes({ testes }), /demasiados testes/);
 });
