@@ -117,8 +117,9 @@ que protege o código.
   runs é atribuída a diferenças de hardware dos runners — **não comprovado**;
   o workflow passou a registar o processador para o confirmar.
 - **Decisão:** commit `9534227` acrescenta `maxLength` ao esquema
-  (400/400/300 caracteres). Resultado: **5 em 5** execuções sem `length`
-  (#35 duas tentativas, #36, #37, #38).
+  (400/400/300 caracteres). Resultado: **12 em 12** execuções sem `length`
+  até 26/11 (#35 duas tentativas, #36, #37, #38, #39 na `main` e #40 a #45),
+  contra 1 em 4 antes da correção.
 - **Lição:** uma hipótese confirmada com 2 runs verdes foi refutada com mais
   repetições. Correções de componentes não determinísticos devem ser validadas
   com várias execuções sobre o mesmo código.

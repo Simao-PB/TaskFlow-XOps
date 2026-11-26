@@ -61,7 +61,8 @@ Detalhes em `docs/arquitetura.md` e `docs/architectural-feedback-log.md`.
 - Deteta o `eval()` do exemplo inseguro, tal como o SAST.
 - **Fiabilidade:** causou 10 dos 11 runs falhados até 21/11 (3 por falsos
   positivos, 7 por respostas cortadas). Depois da correção com `maxLength` no
-  esquema JSON: 5 em 5 execuções sem respostas cortadas, contra 1 em 4 antes
+  esquema JSON: 12 em 12 execuções sem respostas cortadas até 26/11, contra
+  1 em 4 antes
   (AFL-06).
 
 ## 2. Comparação SAST × DAST × AI Gate
