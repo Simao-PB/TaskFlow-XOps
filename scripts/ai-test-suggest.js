@@ -60,7 +60,9 @@ function resolverFicheiro(ficheiro) {
         throw new Error('Ficheiro fora do projeto ou nao permitido');
     }
 
-    return { caminho, relativo };
+    // Sempre com "/" (no Windows path.relative devolve "\\"), para o
+    // relatorio e as instrucoes da IA serem iguais em qualquer sistema.
+    return { caminho, relativo: relativo.split(path.sep).join('/') };
 }
 
 // Extrai o código de uma função declarada com "function nome(" para o
