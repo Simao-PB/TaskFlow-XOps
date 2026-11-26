@@ -188,6 +188,7 @@ passarem: nenhuma imagem é publicada sem passar por todos os gates.
 | Análise de alertas com IA fora do ciclo de pedidos | Chamadas ao modelo são lentas e não determinísticas | §3.3 |
 | `createServer({ relatorioAlertasPath })` | Testes sem tocar no relatório real | `docs/testes-monitorizacao.md` |
 | AI Gate com esquema JSON limitado (`maxLength`) e aprovações por SHA256 | Conter o comportamento não determinístico do modelo | AFL-03 a AFL-06 |
+| AI Gate mantém-se bloqueante; análise de alertas e sugestões de testes são informativas | Depois dos limites estruturais, 29 runs seguidos sem falhas do AI Gate; um aviso novo exige revisão humana | `docs/architectural-feedback-log.md` (decisão S5-7) |
 | DAST num job separado, contra instância temporária | Isolamento e paralelismo | `docs/dast-zap.md` |
 | Imagem Docker com versão fixa do Node, sem root e sem o token | Reprodutibilidade (AFL-06), menor privilégio, segredos fora da imagem | Job `docker`; `Dockerfile` |
 | Publicação só depois de todos os gates, com o `GITHUB_TOKEN` | Entrega contínua sem segredos nem contas externas | Job `publish` |

@@ -159,7 +159,8 @@ Evidência completa em `docs/architectural-feedback-log.md`.
 - DAST com a lista de rotas da API e com o lado autenticado; avaliar um scan
   ativo contra a instância temporária.
 - Confirmar a hipótese do hardware na variabilidade do AI Gate e avaliar se o
-  AI Gate deve ser bloqueante ou apenas informativo.
+  AI Gate deve ser bloqueante ou apenas informativo. *Decidido no Sprint 5
+  (S5-7): mantém-se bloqueante — ver `docs/architectural-feedback-log.md`.*
 - Configurar o endereço do servidor em `scripts/ai-alerts.js` (hoje fixo em
   `127.0.0.1:3000`). *Feito no Sprint 5 (S5-7): variável `TASKFLOW_URL`.*
 
