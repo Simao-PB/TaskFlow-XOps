@@ -1,0 +1,15 @@
+# Ficheiros que não entram no contexto de build da imagem Docker.
+.git
+.github
+node_modules
+reports
+test
+docs
+scripts
+*.pdf
+*.md
+.env
+.env.*
+Dockerfile
+.dockerignore
+eslint.config.js
