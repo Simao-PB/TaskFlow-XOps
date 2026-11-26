@@ -8,6 +8,34 @@ const raiz = path.resolve(__dirname, '..');
 const token = process.env.METRICS_TOKEN;
 
 const CAMPOS_ANALISE = ['resumo', 'causaPossivel', 'recomendacao'];
+const ENDERECO_PADRAO = 'http://127.0.0.1:3000';
+
+// Endereco do TaskFlow a analisar: TASKFLOW_URL ou, por omissao, a
+// instancia local. O METRICS_TOKEN e enviado para este endereco, por isso
+// so se aceitam http/https, sem credenciais, parametros ou fragmento.
+function resolverEnderecoAlertas(valor) {
+    const texto = (valor ?? '').trim() || ENDERECO_PADRAO;
+    let base;
+
+    try {
+        base = new URL(texto);
+    } catch {
+        throw new Error('TASKFLOW_URL invalido');
+    }
+
+    if (!['http:', 'https:'].includes(base.protocol)) {
+        throw new Error('TASKFLOW_URL tem de usar http ou https');
+    }
+
+    if (base.username || base.password || base.search || base.hash) {
+        throw new Error('TASKFLOW_URL nao pode ter credenciais, parametros ou fragmento');
+    }
+
+    // Mantem um eventual caminho base (ex.: https://servidor/taskflow).
+    const caminho = base.pathname.endsWith('/') ? base.pathname : `${base.pathname}/`;
+
+    return new URL(`${caminho}api/alerts`, base.origin).href;
+}
 
 // Converte o texto devolvido pelo Ollama num objeto.
 function interpretarRespostaIA(texto) {
@@ -42,7 +70,10 @@ async function analisarAlertas() {
         throw new Error('METRICS_TOKEN nao configurado');
     }
 
-    const resposta = await fetch('http://127.0.0.1:3000/api/alerts', {
+    const enderecoAlertas = resolverEnderecoAlertas(process.env.TASKFLOW_URL);
+    console.log('A consultar:', enderecoAlertas);
+
+    const resposta = await fetch(enderecoAlertas, {
         headers: {
             Authorization: `Bearer ${token}`
         },
@@ -145,4 +176,4 @@ if (require.main === module) {
     });
 }
 
-module.exports = { interpretarRespostaIA, validarAnaliseIA };
+module.exports = { interpretarRespostaIA, validarAnaliseIA, resolverEnderecoAlertas };

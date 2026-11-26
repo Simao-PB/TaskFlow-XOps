@@ -69,6 +69,37 @@ versionadas, e versões fixas do *runtime*. Melhorar só as instruções do mode
 (prompt) não chegou. Sem esses limites, o gate trava a equipa mais vezes do
 que protege o código.
 
+### Decisão: o AI Gate continua bloqueante (S5-7 · SCRUM-46, 26/11)
+
+Com os limites estruturais aplicados, a equipa decidiu **manter o AI Gate como
+gate bloqueante**.
+
+| Período | Runs do CI | Falhados pelo AI Gate |
+|---|---|---|
+| Até ao `maxLength` (#1–#34) | 34 | 10 |
+| Depois do `maxLength` (#36–#64) | 29 | **0**, todos à primeira tentativa |
+
+Nesses 29 runs, o código de `src/` mudou (interface do Sprint 5, Docker) e as
+aprovações manuais (`config/ai-gate-approvals.json`) não precisaram de nenhuma
+entrada nova: não mudam desde 19/11.
+
+**Porquê bloqueante:**
+
+- O motivo para o tornar informativo (bloqueios sem razão) deixou de se
+  verificar depois das correções estruturais.
+- Um aviso novo continua a exigir revisão humana e uma aprovação versionada,
+  nunca uma aprovação automática.
+- A análise de código com IA é um dos objetivos do projeto; como informativa,
+  deixaria de ter efeito na entrega.
+
+**O que fica de fora do gate:** a análise de alertas (`ai-alerts.js`) e as
+sugestões de testes (`ai-test-suggestions.yml`) continuam informativas, porque
+o resultado delas não decide se o código é entregue.
+
+**Quando rever a decisão:** se voltar a haver falhas do AI Gate sem
+vulnerabilidade real (novo AFL), a primeira opção é bloquear apenas avisos
+ALTA, antes de o tornar só informativo.
+
 ## Entradas detalhadas
 
 ### AFL-01 — Dependências fora do lockfile

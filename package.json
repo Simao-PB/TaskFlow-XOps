@@ -5,7 +5,7 @@
   "description": "Protótipo Sprint 1 para Plataformas e Serviços X-Ops",
   "scripts": {
     "start": "node src/server.js",
-    "test": "node --test",
+    "test": "node --test \"test/*.test.js\"",
     "check": "node --check src/server.js && node --check src/app.js",
     "security": "eslint src --max-warnings=0",
     "ai-review": "node scripts/ai-review.js src/app.js"

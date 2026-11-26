@@ -188,6 +188,7 @@ passarem: nenhuma imagem é publicada sem passar por todos os gates.
 | Análise de alertas com IA fora do ciclo de pedidos | Chamadas ao modelo são lentas e não determinísticas | §3.3 |
 | `createServer({ relatorioAlertasPath })` | Testes sem tocar no relatório real | `docs/testes-monitorizacao.md` |
 | AI Gate com esquema JSON limitado (`maxLength`) e aprovações por SHA256 | Conter o comportamento não determinístico do modelo | AFL-03 a AFL-06 |
+| AI Gate mantém-se bloqueante; análise de alertas e sugestões de testes são informativas | Depois dos limites estruturais, 29 runs seguidos sem falhas do AI Gate; um aviso novo exige revisão humana | `docs/architectural-feedback-log.md` (decisão S5-7) |
 | DAST num job separado, contra instância temporária | Isolamento e paralelismo | `docs/dast-zap.md` |
 | Imagem Docker com versão fixa do Node, sem root e sem o token | Reprodutibilidade (AFL-06), menor privilégio, segredos fora da imagem | Job `docker`; `Dockerfile` |
 | Publicação só depois de todos os gates, com o `GITHUB_TOKEN` | Entrega contínua sem segredos nem contas externas | Job `publish` |
@@ -200,6 +201,7 @@ passarem: nenhuma imagem é publicada sem passar por todos os gates.
 |---|---|---|
 | `PORT` | servidor | Porta HTTP (por defeito 3000) |
 | `METRICS_TOKEN` | servidor e `ai-alerts.js` | Token dos endpoints de monitorização; sem ele respondem 503 |
+| `TASKFLOW_URL` | `ai-alerts.js` | Endereço do TaskFlow a analisar (por defeito `http://127.0.0.1:3000`); só `http`/`https`, sem credenciais, parâmetros ou fragmento, porque o token é enviado para lá |
 | `OLLAMA_VERSION` | CI (job `quality`) | Versão fixa do Ollama instalada |
 | `DAST_TARGET` | CI (job `dast`) | Endereço da instância temporária |
 | `NODE_ENV` | imagem Docker | `production` |
@@ -220,8 +222,6 @@ passarem: nenhuma imagem é publicada sem passar por todos os gates.
   instância do servidor.
 - Sem autenticação de utilizadores; só a monitorização tem token, e é um token
   partilhado.
-- `scripts/ai-alerts.js` usa sempre `http://127.0.0.1:3000`: com outro `PORT`,
-  a análise de alertas não encontra o servidor.
 - Limiares dos alertas fixos e de demonstração.
 - O ZAP não analisa o dashboard nem a API (AFL-08).
 - A entrega contínua termina na publicação da imagem no `ghcr.io`: não há um
