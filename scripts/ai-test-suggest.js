@@ -63,6 +63,25 @@ function resolverFicheiro(ficheiro) {
     return { caminho, relativo };
 }
 
+// Extrai o código de uma função declarada com "function nome(" para o
+// enviar em destaque ao modelo (o módulo completo segue como contexto).
+function extrairFuncao(codigo, funcao) {
+    const linhas = codigo.split('\n');
+    const inicio = linhas.findIndex(l => l.startsWith(`function ${funcao}(`));
+
+    if (inicio === -1) {
+        return null;
+    }
+
+    let fim = inicio + 1;
+
+    while (fim < linhas.length && !linhas[fim - 1].startsWith('}')) {
+        fim++;
+    }
+
+    return linhas.slice(inicio, fim).join('\n');
+}
+
 // Valida a estrutura da resposta do modelo.
 function validarSugestoes(resposta) {
     if (!resposta || typeof resposta !== 'object' || !Array.isArray(resposta.testes)) {
@@ -152,7 +171,9 @@ async function pedirSugestoes(codigo, relativo, funcao) {
             model: configuracaoIA.modelo,
             system: instrucoes,
             prompt:
-                `Ficheiro: ${relativo}\nFuncao a testar: ${funcao}\n\n` +
+                `Funcao a testar: ${funcao}\n\n` +
+                `Codigo da funcao ${funcao}:\n${extrairFuncao(codigo, funcao) || '(nao encontrado)'}\n\n` +
+                `Modulo completo (${relativo}), apenas como contexto:\n` +
                 linhasNumeradas,
             format: esquema,
             stream: false,
@@ -267,6 +288,7 @@ if (require.main === module) {
 
 module.exports = {
     esquema,
+    extrairFuncao,
     resolverFicheiro,
     validarSugestoes,
     construirFicheiroTeste,

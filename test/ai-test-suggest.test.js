@@ -81,3 +81,23 @@ test('classifica o resultado da execucao do teste', () => {
     assert.equal(classificarResultado(1, 'SyntaxError: Unexpected token'), 'nao compila');
     assert.equal(classificarResultado(1, 'ReferenceError: x is not defined'), 'erro de execucao');
 });
+
+test('extrai o codigo de uma funcao declarada no modulo', () => {
+    const { extrairFuncao } = require('../scripts/ai-test-suggest');
+    const codigo = [
+        'function a() {',
+        '    return 1;',
+        '}',
+        '',
+        'function b(x) {',
+        '    if (x) {',
+        '        return 2;',
+        '    }',
+        '}',
+        'module.exports = { a, b };'
+    ].join('\n');
+
+    assert.equal(extrairFuncao(codigo, 'b'), 'function b(x) {\n    if (x) {\n        return 2;\n    }\n}');
+    assert.equal(extrairFuncao(codigo, 'a'), 'function a() {\n    return 1;\n}');
+    assert.equal(extrairFuncao(codigo, 'c'), null);
+});
